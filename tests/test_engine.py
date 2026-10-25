@@ -68,7 +68,8 @@ class TestCollision(unittest.TestCase):
     def test_obstacle(self):
         s = Snake((5, 5), Direction.RIGHT, length=1)
         s.move()
-        self.assertEqual(collision.check(s, 10, 10, {(6, 5)}), Collision.OBSTACLE)
+        self.assertEqual(collision.check(
+            s, 10, 10, {(6, 5)}), Collision.OBSTACLE)
 
     def test_no_collision(self):
         s = Snake((5, 5), Direction.RIGHT)
