@@ -1,3 +1,22 @@
 __pycache__/
 *.pyc
 .vscode/
+
+# Python virtual environments
+.venv/
+.venv*/
+venv/
+
+# Local databases
+instance/
+*.sqlite
+*.sqlite3
+*.db
+
+# Test and coverage artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+
+# macOS
+.DS_Store
