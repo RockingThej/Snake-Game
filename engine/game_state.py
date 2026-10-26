@@ -17,12 +17,13 @@ from enum import Enum
 from engine import collision
 from engine.food import spawn_food
 from engine.snake import Direction, Snake
+from modes.difficulty import DifficultyManager
 
 
 class Status(Enum):
     READY = "ready"
     RUNNING = "running"
-    PAUSED = "paused"        # implemented by S1-09 (pause/resume)
+    PAUSED = "paused"
     GAME_OVER = "game_over"
 
 
@@ -30,11 +31,15 @@ class GameState:
     POINTS_PER_FOOD = 10     # placeholder; Score Manager (S1-17) owns the rules
 
     def __init__(self, width=30, height=20, mode="classic",
-                 difficulty="medium", rng=None):
+                 difficulty="medium", rng=None, difficulty_manager=None):
         self.width = width
         self.height = height
         self.mode = mode
-        self.difficulty = difficulty
+        self.difficulty_manager = difficulty_manager or DifficultyManager()
+        self.difficulty = self.difficulty_manager.normalize(difficulty)
+        self.tick_interval_ms = self.difficulty_manager.get_speed_ms(
+            self.difficulty
+        )
         self.rng = rng or random.Random()
         self.snake = Snake(start=(width // 2, height // 2),
                            direction=Direction.RIGHT, length=3)
@@ -51,6 +56,32 @@ class GameState:
         if self.status == Status.READY:
             self.status = Status.RUNNING
 
+    def pause(self):
+        """Pause a running game. Return whether the state changed."""
+        if self.status != Status.RUNNING:
+            return False
+        self.status = Status.PAUSED
+        return True
+
+    def resume(self):
+        """Resume a paused game. Return whether the state changed."""
+        if self.status != Status.PAUSED:
+            return False
+        self.status = Status.RUNNING
+        return True
+
+    def set_difficulty(self, difficulty):
+        """Select a speed level before starting the game session."""
+        if self.status != Status.READY:
+            raise RuntimeError(
+                "difficulty can only be changed before the game starts"
+            )
+        normalized = self.difficulty_manager.normalize(difficulty)
+        self.difficulty = normalized
+        self.tick_interval_ms = self.difficulty_manager.get_speed_ms(
+            normalized
+        )
+
     def set_direction(self, direction):
         if self.status == Status.RUNNING:
             self.snake.set_direction(direction)
@@ -61,7 +92,9 @@ class GameState:
             return
         self.snake.move()
 
-        hit = collision.check(self.snake, self.width, self.height, self.obstacles)
+        hit = collision.check(
+            self.snake, self.width, self.height, self.obstacles
+        )
         if hit is not None:
             self.collision = hit
             self.status = Status.GAME_OVER
