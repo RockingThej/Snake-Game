@@ -1,17 +1,13 @@
-
 __pycache__/
 *.pyc
 .vscode/
 
-<<<<<<< HEAD
 # SQLite databases
 *.sqlite3
 *.sqlite3-journal
 *.db
 *.db-journal
 
-=======
->>>>>>> 2d854dbd88772c1c58014ad76259c6e688462a64
 # Python virtual environments
 .venv/
 .venv*/
@@ -20,11 +16,6 @@ venv/
 # Local databases
 instance/
 *.sqlite
-<<<<<<< HEAD
-=======
-*.sqlite3
-*.db
->>>>>>> 2d854dbd88772c1c58014ad76259c6e688462a64
 
 # Test and coverage artifacts
 .pytest_cache/
@@ -33,4 +24,3 @@ htmlcov/
 
 # macOS
 .DS_Store
-git merge --abort

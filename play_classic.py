@@ -8,18 +8,30 @@ import sys
 
 import pygame
 
-from engine.game_state import GameState, Status
-from engine.snake import Direction
+from db import initialize_database
+from engine.game_state import Status
+from modes import GameModeManager, ModeNotImplementedError
+from ui.input_handler import InputHandler
+from ui.keymaps import SINGLE_PLAYER_KEYS
 
 WIDTH, HEIGHT, CELL, HUD = 30, 20, 30, 40
-TICK_MS = 110    # placeholder speed; Difficulty Manager (S1-07) will supply this
 
-KEYS = {
-    pygame.K_UP: Direction.UP, pygame.K_w: Direction.UP,
-    pygame.K_DOWN: Direction.DOWN, pygame.K_s: Direction.DOWN,
-    pygame.K_LEFT: Direction.LEFT, pygame.K_a: Direction.LEFT,
-    pygame.K_RIGHT: Direction.RIGHT, pygame.K_d: Direction.RIGHT,
-}
+
+def draw_mode_menu(screen, font, mode_manager, message=None):
+    """Display all registered modes and any unavailable-mode message."""
+    screen.fill((20, 20, 24))
+    heading = font.render("Select a game mode", True, (230, 230, 230))
+    screen.blit(heading, (24, 24))
+
+    for index, mode in enumerate(mode_manager.list_modes()):
+        availability = "Available" if mode.implemented else "Not implemented"
+        line = f"{mode.selection_key}. {mode.name} - {availability}"
+        color = (130, 240, 155) if mode.implemented else (180, 180, 190)
+        screen.blit(font.render(line, True, color), (40, 80 + index * 42))
+
+    if message:
+        warning = font.render(message, True, (255, 150, 120))
+        screen.blit(warning, (24, HEIGHT * CELL - 20))
 
 
 def draw(screen, font, state):
@@ -38,7 +50,19 @@ def draw(screen, font, state):
             f"Difficulty: {state.difficulty}")
     screen.blit(font.render(text, True, (230, 230, 230)), (10, 10))
     if state.status == Status.READY:
-        msg = "Press any key to start"
+        msg = "1: Easy  2: Medium  3: Hard  |  Enter: Start"
+    elif state.status == Status.PAUSED:
+        overlay = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 180))
+        screen.blit(overlay, (0, 0))
+        title = font.render("PAUSED", True, (255, 220, 120))
+        option = font.render("Resume - press Enter or P", True,
+                             (230, 230, 230))
+        center_x = WIDTH * CELL // 2
+        center_y = HEIGHT * CELL // 2 + HUD
+        screen.blit(title, (center_x - title.get_width() // 2, center_y - 32))
+        screen.blit(option, (center_x - option.get_width() // 2, center_y + 4))
+        msg = ""
     elif state.status == Status.GAME_OVER:
         msg = f"Game over ({state.collision.value if state.collision else 'win'})" \
               " - press R to restart"
@@ -51,16 +75,24 @@ def draw(screen, font, state):
 
 
 def main():
+    initialize_database()
     pygame.init()
     screen = pygame.display.set_mode((WIDTH * CELL, HEIGHT * CELL + HUD))
-    pygame.display.set_caption("Snake - Classic Mode (dev runner)")
+    pygame.display.set_caption("Snake - Mode Selection (dev runner)")
     font = pygame.font.SysFont(None, 28)
     clock = pygame.time.Clock()
-    state = GameState(WIDTH, HEIGHT)
+    mode_manager = GameModeManager()
+    state = None
+    mode_message = None
+    input_handler = InputHandler(SINGLE_PLAYER_KEYS)
     elapsed = 0
 
     while True:
-        elapsed += clock.tick(60)
+        frame_elapsed = clock.tick(60)
+        if state is not None and state.status == Status.RUNNING:
+            elapsed += frame_elapsed
+        else:
+            elapsed = 0
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -69,17 +101,67 @@ def main():
                 if event.key == pygame.K_ESCAPE:
                     pygame.quit()
                     sys.exit()
-                if state.status == Status.GAME_OVER and event.key == pygame.K_r:
-                    state = GameState(WIDTH, HEIGHT)
+                if state is None:
+                    selected_mode = next(
+                        (mode for mode in mode_manager.list_modes()
+                         if event.key == getattr(
+                             pygame, f"K_{mode.selection_key}"
+                         )),
+                        None,
+                    )
+                    if selected_mode is not None:
+                        try:
+                            state = mode_manager.create_game(
+                                selected_mode.id,
+                                width=WIDTH,
+                                height=HEIGHT,
+                            )
+                            mode_message = None
+                            elapsed = 0
+                        except ModeNotImplementedError as exc:
+                            mode_message = str(exc)
+                    continue
+                if state.status == Status.PAUSED:
+                    if event.key in (pygame.K_RETURN, pygame.K_SPACE,
+                                     pygame.K_p):
+                        state.resume()
+                    continue
+                if (state.status == Status.RUNNING and
+                        event.key == pygame.K_p):
+                    state.pause()
+                    elapsed = 0
+                    continue
+                if (state.status == Status.GAME_OVER and
+                        event.key == pygame.K_r):
+                    state = mode_manager.create_game(
+                        state.mode,
+                        width=WIDTH,
+                        height=HEIGHT,
+                        difficulty=state.difficulty,
+                    )
                     elapsed = 0
                 elif state.status == Status.READY:
+                    difficulty_keys = {
+                        pygame.K_1: "easy",
+                        pygame.K_2: "medium",
+                        pygame.K_3: "hard",
+                    }
+                    if event.key in difficulty_keys:
+                        state.set_difficulty(difficulty_keys[event.key])
+                        continue
                     state.start()
-                if event.key in KEYS:
-                    state.set_direction(KEYS[event.key])
-        while elapsed >= TICK_MS:
-            elapsed -= TICK_MS
-            state.tick()
-        draw(screen, font, state)
+                resolved = input_handler.resolve(event.key)
+                if resolved is not None:
+                    player_id, direction = resolved
+                    if player_id == "player1":
+                        state.set_direction(direction)
+        if state is not None:
+            while elapsed >= state.tick_interval_ms:
+                elapsed -= state.tick_interval_ms
+                state.tick()
+            draw(screen, font, state)
+        else:
+            draw_mode_menu(screen, font, mode_manager, mode_message)
         pygame.display.flip()
 
 
