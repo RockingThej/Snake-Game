@@ -67,7 +67,11 @@ class ScreenManager:
         return current
 
     def replace(self, screen):
-        """Replace the top of the stack with a new screen."""
+        """Replace the current screen with a new one while keeping the stack.
+
+        If the stack is empty, the new screen becomes the only item; otherwise the
+        top of the stack is replaced in place.
+        """
         if self._stack:
             self._stack[-1] = screen
         else:
@@ -80,7 +84,11 @@ class ScreenManager:
     def run(self, initial_screen=None, size=(1280, 720), clock_tick=60):
         """Run the manager loop until the screen stack is empty.
 
-        The default window size matches the SRS minimum desktop display.
+        ``initial_screen`` is optional and may be a screen instance or a factory
+        callable that returns a screen. Any screen-specific event handling is
+        delegated directly to the screen objects.
+
+        The default window size matches the SRS minimum supported desktop display.
         """
         import pygame
 
