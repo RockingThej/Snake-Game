@@ -5,6 +5,9 @@ from ui.screen_manager import Screen, ScreenManager
 __all__ = [
     "Screen",
     "ScreenManager",
+    "TextField",
+    "LoginScreen",
+    "RegisterScreen",
     "MainMenuScreen",
     "ModeSelectionScreen",
     "DifficultySelectionScreen",
@@ -13,6 +16,15 @@ __all__ = [
 
 
 def __getattr__(name):
+    if name == "TextField":
+        from ui.auth_screens import TextField
+        return TextField
+    if name == "LoginScreen":
+        from ui.auth_screens import LoginScreen
+        return LoginScreen
+    if name == "RegisterScreen":
+        from ui.auth_screens import RegisterScreen
+        return RegisterScreen
     if name == "MainMenuScreen":
         from ui.menu_screens import MainMenuScreen
         return MainMenuScreen
