@@ -34,6 +34,13 @@ class ScreenManager:
     def __init__(self):
         self._stack = []
         self.running = False
+        # Optional per-run state shared by screens (see ui/session.py).
+        self.session = None
+
+    @property
+    def depth(self):
+        """Number of screens currently on the stack."""
+        return len(self._stack)
 
     @property
     def current(self):

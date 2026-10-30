@@ -23,6 +23,16 @@ def _safe_font(size=28):
         return None
 
 
+def _go_back(manager):
+    """Return to the screen underneath, or to a fresh main menu if none."""
+    if manager is None:
+        return
+    if manager.depth > 1:
+        manager.pop()
+    else:
+        manager.replace(MainMenuScreen())
+
+
 class BaseMenuScreen(Screen):
     """Shared rendering helpers for menu screens."""
 
@@ -69,8 +79,25 @@ class BaseMenuScreen(Screen):
 class MainMenuScreen(BaseMenuScreen):
     """Initial landing screen for the game."""
 
-    def __init__(self, title="Snake Game"):
+    def __init__(self, title="Snake Game", username=None,
+                 on_leaderboard=None, on_logout=None):
         super().__init__(title)
+        self.username = username
+        self.on_leaderboard = on_leaderboard
+        self.on_logout = on_logout
+
+    def options(self):
+        options = ["1. Play"]
+        if self.on_leaderboard is not None:
+            options.append("2. Leaderboard")
+        options.append("3. Log out" if self.on_logout is not None
+                       else "3. Exit")
+        return options
+
+    def _quit(self):
+        if self.manager is not None:
+            self.manager.running = False
+            self.manager._stack.clear()
 
     def handle_event(self, event):
         _require_pygame()
@@ -79,23 +106,34 @@ class MainMenuScreen(BaseMenuScreen):
 
         if event.key in (pygame.K_1, pygame.K_RETURN, pygame.K_SPACE):
             if self.manager is not None:
-                self.manager.replace(ModeSelectionScreen())
+                # push, so Esc/back from the game returns to this menu
+                self.manager.push(ModeSelectionScreen())
+            return
+        if event.key == pygame.K_2 and self.on_leaderboard is not None:
+            self.on_leaderboard()
+            return
+        if event.key == pygame.K_3:
+            if self.on_logout is not None:
+                self.on_logout()
+            else:
+                self._quit()
             return
         if event.key == pygame.K_ESCAPE:
-            if self.manager is not None:
-                self.manager.running = False
-                self.manager._stack.clear()
+            self._quit()
 
     def draw(self, surface):
         super().draw(surface)
         _require_pygame()
-        options = [
-            "1. Play",
-            "2. Difficulty",
-            "3. Exit",
-        ]
-        for index, option in enumerate(options):
+        for index, option in enumerate(self.options()):
             self._draw_text(surface, option, (80, 100 + index * 40))
+        if self.username:
+            self._draw_text(
+                surface,
+                "Logged in as %s" % self.username,
+                (surface.get_width() // 2, surface.get_height() - 30),
+                color=(180, 180, 190),
+                center=True,
+            )
 
 
 class ModeSelectionScreen(BaseMenuScreen):
@@ -116,6 +154,9 @@ class ModeSelectionScreen(BaseMenuScreen):
     def handle_event(self, event):
         _require_pygame()
         if event.type != pygame.KEYDOWN:
+            return
+        if event.key == pygame.K_ESCAPE:
+            _go_back(self.manager)
             return
 
         mapping = {
@@ -168,6 +209,9 @@ class DifficultySelectionScreen(BaseMenuScreen):
         _require_pygame()
         if event.type != pygame.KEYDOWN:
             return
+        if event.key == pygame.K_ESCAPE:
+            _go_back(self.manager)
+            return
 
         mapping = {
             pygame.K_1: "easy",
@@ -197,8 +241,11 @@ class DifficultySelectionScreen(BaseMenuScreen):
 class GameOverScreen(BaseMenuScreen):
     """Summary screen that shows the final score and post-game choices."""
 
-    def __init__(self, state, title="Game Over"):
+    def __init__(self, state, title="Game Over", saved=False,
+                 on_leaderboard=None):
         self.state = state
+        self.saved = saved
+        self.on_leaderboard = on_leaderboard
         super().__init__(title)
 
     def score_text(self):
@@ -221,9 +268,12 @@ class GameOverScreen(BaseMenuScreen):
                 self.manager.replace(GameScreen(state))
             return
 
+        if event.key == pygame.K_l and self.on_leaderboard is not None:
+            self.on_leaderboard()
+            return
+
         if event.key in (pygame.K_m, pygame.K_ESCAPE):
-            if self.manager is not None:
-                self.manager.replace(MainMenuScreen())
+            _go_back(self.manager)
 
     def draw(self, surface):
         super().draw(surface)
@@ -235,5 +285,11 @@ class GameOverScreen(BaseMenuScreen):
             center=True,
             color=(255, 220, 120),
         )
-        self._draw_text(surface, "R. Restart", (80, 200))
-        self._draw_text(surface, "M. Menu", (80, 240))
+        status = "Score saved to the leaderboard" if self.saved else (
+            "Score not saved (not logged in)")
+        self._draw_text(surface, status, (surface.get_width() // 2, 175),
+                        color=(180, 180, 190), center=True)
+        self._draw_text(surface, "R. Restart", (80, 220))
+        self._draw_text(surface, "M. Menu", (80, 260))
+        if self.on_leaderboard is not None:
+            self._draw_text(surface, "L. Leaderboard", (80, 300))

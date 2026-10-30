@@ -62,6 +62,18 @@ it is not implemented yet and returns to the mode list.
 Press `P` during gameplay to pause. The pause menu freezes movement and shows
 the resume option; press `Enter`, `Space`, or `P` to continue the same session.
 
+## Running the game
+
+```
+pip install -r requirements.txt
+python main.py
+```
+
+`main.py` opens the login screen (F2 switches to Create account), then the
+main menu, mode and difficulty screens, the game, a results screen that saves
+your score, and the leaderboard. `run.py` is separate: it starts the Flask
+backend only.
+
 ## Team 6
 
 - Thejaswi S
