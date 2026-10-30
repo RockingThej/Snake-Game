@@ -44,6 +44,7 @@ class GameScreen:
         self._new_game = new_game
         self.elapsed = 0.0
         self.font = None
+        self._finished = False
 
     def on_enter(self):
         try:
@@ -62,6 +63,7 @@ class GameScreen:
                 old.mode, width=old.width, height=old.height,
                 difficulty=old.difficulty)
         self.elapsed = 0.0
+        self._finished = False
 
     def handle_event(self, event):
         if event.type != pygame.KEYDOWN:
@@ -97,6 +99,16 @@ class GameScreen:
         while self.elapsed >= self.state.tick_interval_ms:
             self.elapsed -= self.state.tick_interval_ms
             self.state.tick()
+        self._report_game_over()
+
+    def _report_game_over(self):
+        """Tell the session once when the game ends (saves the score)."""
+        if self._finished or self.state.status != Status.GAME_OVER:
+            return
+        self._finished = True
+        session = getattr(self.manager, "session", None)
+        if session is not None:
+            session.finish_game(self.state)
 
     def draw(self, surface):
         state = self.state
