@@ -12,6 +12,7 @@ except ImportError:  # pragma: no cover - optional runtime dependency
 from engine.game_state import GameState  # noqa: E402
 from modes import GameModeManager  # noqa: E402
 from ui.menu_screens import (  # noqa: E402
+    BattleResultsScreen,
     DifficultySelectionScreen,
     GameOverScreen,
     MainMenuScreen,
@@ -56,6 +57,36 @@ class TestMenuScreens(unittest.TestCase):
         screen = GameOverScreen(state)
 
         self.assertIn("42", screen.score_text())
+
+    def test_battle_results_show_both_scores_and_winner(self):
+        state = GameModeManager().create_game("two_player_battle")
+        state.scores.update({"player1": 40, "player2": 20})
+        state.winner = "player1"
+        screen = BattleResultsScreen(state)
+
+        self.assertIn("Player 1: 40", screen.scores_text())
+        self.assertIn("Player 2: 20", screen.scores_text())
+        self.assertEqual(screen.winner_text(), "Player 1 wins")
+
+    def test_battle_results_report_draw(self):
+        state = GameModeManager().create_game("two_player_battle")
+        screen = BattleResultsScreen(state)
+
+        self.assertEqual(screen.winner_text(), "Draw")
+
+    def test_battle_results_save_and_show_confirmation(self):
+        class SaveManager:
+            def save_battle_result(self, state):
+                return {"player1": 101, "player2": 102}
+
+        state = GameModeManager().create_game("two_player_battle")
+        screen = BattleResultsScreen(state, score_manager=SaveManager())
+
+        screen.on_enter()
+
+        self.assertEqual(state.result_score_ids,
+                         {"player1": 101, "player2": 102})
+        self.assertIn("saved", screen.save_message.lower())
 
 
 if __name__ == "__main__":
