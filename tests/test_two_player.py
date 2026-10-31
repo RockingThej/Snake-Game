@@ -56,6 +56,31 @@ class TestTwoPlayerGameState(unittest.TestCase):
         self.assertNotIn(state.food, state.snakes["player2"].cells())
 
     def test_head_to_head_collision_ends_match_as_draw(self):
+        state = self.make()
+        state.snakes["player1"] = Snake((5, 5), Direction.RIGHT, length=1)
+        state.snakes["player2"] = Snake((7, 5), Direction.LEFT, length=1)
+
+        state.tick()
+
+        self.assertEqual(state.status, Status.GAME_OVER)
+        self.assertEqual(state.collision, Collision.SNAKE)
+        self.assertEqual(state.collisions["player1"], Collision.SNAKE)
+        self.assertEqual(state.collisions["player2"], Collision.SNAKE)
+        self.assertIsNone(state.winner)
+
+    def test_head_to_body_collision_awards_win_to_other_player(self):
+        state = self.make()
+        state.snakes["player1"] = Snake((4, 4), Direction.RIGHT, length=1)
+        state.snakes["player2"] = Snake((5, 3), Direction.UP, length=3)
+
+        state.tick()
+
+        self.assertEqual(state.status, Status.GAME_OVER)
+        self.assertEqual(state.collisions["player1"], Collision.SNAKE)
+        self.assertIsNone(state.collisions["player2"])
+        self.assertEqual(state.winner, "player2")
+
+    def test_head_swap_collision_ends_match_as_draw(self):
         state = self.make(width=8)
 
         state.tick()
