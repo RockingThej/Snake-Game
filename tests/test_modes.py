@@ -2,6 +2,7 @@
 import unittest
 
 from engine.game_state import GameState
+from engine.two_player_game_state import TwoPlayerGameState
 from modes import GameModeManager, ModeNotImplementedError
 
 
@@ -37,6 +38,15 @@ class TestGameModeManager(unittest.TestCase):
         self.assertIsInstance(state, GameState)
         self.assertEqual(state.mode, "classic")
         self.assertEqual(state.difficulty, "hard")
+
+    def test_two_player_battle_creates_two_player_state(self):
+        state = self.manager.create_game(
+            "two_player_battle", width=18, height=10
+        )
+
+        self.assertIsInstance(state, TwoPlayerGameState)
+        self.assertEqual(tuple(state.snakes), ("player1", "player2"))
+        self.assertEqual(state.scores, {"player1": 0, "player2": 0})
 
     def test_unimplemented_modes_fail_with_clear_message(self):
         for mode in self.manager.list_modes():

@@ -7,7 +7,7 @@ import pygame
 
 from engine.game_state import Status
 from ui.input_handler import InputHandler
-from ui.keymaps import SINGLE_PLAYER_KEYS
+from ui.keymaps import SINGLE_PLAYER_KEYS, TWO_PLAYER_KEYS
 
 CELL = 30
 HUD_HEIGHT = 40
@@ -40,7 +40,10 @@ class GameScreen:
 
     def __init__(self, state, input_handler=None, new_game=None):
         self.state = state
-        self.input_handler = input_handler or InputHandler(SINGLE_PLAYER_KEYS)
+        default_keys = (
+            TWO_PLAYER_KEYS if hasattr(state, "snakes") else SINGLE_PLAYER_KEYS
+        )
+        self.input_handler = input_handler or InputHandler(default_keys)
         self._new_game = new_game
         self.elapsed = 0.0
         self.font = None
@@ -59,9 +62,15 @@ class GameScreen:
         else:
             from modes import GameModeManager
             old = self.state
+            options = {
+                "width": old.width,
+                "height": old.height,
+                "difficulty": old.difficulty,
+            }
+            if hasattr(old, "player_ids"):
+                options["player_ids"] = old.player_ids
             self.state = GameModeManager().create_game(
-                old.mode, width=old.width, height=old.height,
-                difficulty=old.difficulty)
+                old.mode, **options)
         self.elapsed = 0.0
         self._finished = False
 
@@ -87,8 +96,12 @@ class GameScreen:
             if state.status == Status.READY:
                 state.start()
             resolved = self.input_handler.resolve(key)
-            if resolved is not None and resolved[0] == "player1":
-                state.set_direction(resolved[1])
+            if resolved is not None:
+                player_id, direction = resolved
+                if hasattr(state, "snakes"):
+                    state.set_direction(direction, player_id)
+                elif player_id == "player1":
+                    state.set_direction(direction)
 
     def update(self, dt):
         """Advance the game. dt is the seconds since the last frame."""
@@ -106,6 +119,11 @@ class GameScreen:
         if self._finished or self.state.status != Status.GAME_OVER:
             return
         self._finished = True
+        if hasattr(self.state, "scores") and self.manager is not None:
+            from ui.menu_screens import BattleResultsScreen
+
+            self.manager.replace(BattleResultsScreen(self.state))
+            return
         session = getattr(self.manager, "session", None)
         if session is not None:
             session.finish_game(self.state)
@@ -115,9 +133,19 @@ class GameScreen:
         surface.fill(BACKGROUND)
         for x, y in state.obstacles:
             pygame.draw.rect(surface, OBSTACLE, cell_rect(x, y))
-        for x, y in state.snake.body:
-            pygame.draw.rect(surface, BODY, cell_rect(x, y))
-        pygame.draw.rect(surface, HEAD, cell_rect(*state.snake.head))
+        snakes = (
+            state.snakes if hasattr(state, "snakes")
+            else {"player1": state.snake}
+        )
+        colors = {
+            "player1": (BODY, HEAD),
+            "player2": ((65, 130, 230), (145, 190, 255)),
+        }
+        for player, snake in snakes.items():
+            body_color, head_color = colors.get(player, (BODY, HEAD))
+            for x, y in snake.body:
+                pygame.draw.rect(surface, body_color, cell_rect(x, y))
+            pygame.draw.rect(surface, head_color, cell_rect(*snake.head))
         if state.food:
             pygame.draw.rect(surface, FOOD, cell_rect(*state.food, inset=4))
         self._text(surface, self.hud_text(), (10, 10))
@@ -133,16 +161,31 @@ class GameScreen:
 
     def hud_text(self):
         s = self.state
+        if hasattr(s, "scores"):
+            return (
+                f"P1: {s.scores['player1']}   P2: {s.scores['player2']}   "
+                f"{s.mode.replace('_', ' ').title()}   "
+                f"{s.difficulty.title()}"
+            )
         return "Score: %d   Mode: %s   Difficulty: %s" % (
             s.score, s.mode.replace("_", " ").title(), s.difficulty.title())
 
     def message(self):
         s = self.state
         if s.status == Status.READY:
+            if hasattr(s, "snakes"):
+                return "P1: WASD  P2: Arrows  |  Any move key: Start"
             return "1: Easy  2: Medium  3: Hard  |  Any move key: Start"
         if s.status == Status.PAUSED:
             return "PAUSED - press Enter or P to resume"
         if s.status == Status.GAME_OVER:
+            if hasattr(s, "snakes"):
+                winner = s.winner.replace("player", "Player ").title()
+                outcome = f"{winner} wins" if s.winner else "Draw"
+                reason = s.collision.value if s.collision else "board full"
+                return (
+                    f"{outcome} ({reason}) - R: restart, Esc: back"
+                )
             return "Game over (%s) - R: restart, Esc: back" % (
                 s.collision.value if s.collision else "win")
         return ""
