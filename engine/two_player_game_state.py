@@ -20,7 +20,8 @@ class TwoPlayerGameState:
     PLAYERS = ("player1", "player2")
 
     def __init__(self, width=30, height=20, mode="two_player_battle",
-                 difficulty="medium", rng=None, difficulty_manager=None):
+                 difficulty="medium", rng=None, difficulty_manager=None,
+                 player_ids=None):
         if width < 8 or height < 1:
             raise ValueError("two-player board must be at least 8 cells wide")
         self.width = width
@@ -41,6 +42,8 @@ class TwoPlayerGameState:
         }
         self.obstacles = set()
         self.scores = {player: 0 for player in self.PLAYERS}
+        self.player_ids = dict(player_ids or {})
+        self.result_score_ids = None
         self.status = Status.READY
         self.collisions = {}
         self.collision = None
