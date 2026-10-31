@@ -46,8 +46,8 @@ class GameModeManager:
             id="two_player_battle",
             name="Two-Player Battle",
             selection_key="4",
-            implemented=False,
-            description="Compete with a second player.",
+            implemented=True,
+            description="Compete with a second player on the same board.",
         ),
         GameMode(
             id="survival",
@@ -91,6 +91,11 @@ class GameModeManager:
             )
 
         # Import locally to keep the registry independent from engine startup.
+        if mode.id == "two_player_battle":
+            from engine.two_player_game_state import TwoPlayerGameState
+
+            return TwoPlayerGameState(mode=mode.id, **game_options)
+
         from engine.game_state import GameState
 
         return GameState(mode=mode.id, **game_options)

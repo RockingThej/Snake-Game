@@ -258,10 +258,10 @@ class GameOverScreen(BaseMenuScreen):
 
         if event.key in (pygame.K_r, pygame.K_RETURN, pygame.K_SPACE):
             if self.manager is not None:
-                state = GameState(
+                state = GameModeManager().create_game(
+                    self.state.mode,
                     width=self.state.width,
                     height=self.state.height,
-                    mode=self.state.mode,
                     difficulty=self.state.difficulty,
                 )
                 state.start()
