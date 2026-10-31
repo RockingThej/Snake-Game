@@ -6,6 +6,7 @@ class Collision(Enum):
     WALL = "wall"
     SELF = "self"
     OBSTACLE = "obstacle"
+    SNAKE = "snake"
 
 
 def hits_wall(head, width, height):
@@ -23,7 +24,12 @@ def hits_obstacle(head, obstacles):
     return head in obstacles
 
 
-def check(snake, width, height, obstacles=()):
+def hits_snake(head, other_snakes):
+    """Return whether ``head`` overlaps another snake's body."""
+    return any(head in other.body for other in other_snakes)
+
+
+def check(snake, width, height, obstacles=(), other_snakes=()):
     """Return the Collision type for the snake's current head, or None."""
     if hits_wall(snake.head, width, height):
         return Collision.WALL
@@ -31,4 +37,6 @@ def check(snake, width, height, obstacles=()):
         return Collision.SELF
     if hits_obstacle(snake.head, obstacles):
         return Collision.OBSTACLE
+    if hits_snake(snake.head, other_snakes):
+        return Collision.SNAKE
     return None

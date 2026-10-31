@@ -128,6 +128,25 @@ class TestGameScreen(unittest.TestCase):
         self.assertEqual(screen.state.snake.head, (x, y - 1))
         self.assertEqual(screen.state.snake.direction, Direction.UP)
 
+    def test_two_player_mode_routes_wasd_and_arrows_to_separate_snakes(self):
+        from modes import GameModeManager
+
+        state = GameModeManager().create_game(
+            "two_player_battle", width=18, height=10, rng=random.Random(0)
+        )
+        screen = GameScreen(state)
+        screen.handle_event(key(pygame.K_w))
+        screen.handle_event(key(pygame.K_UP))
+
+        self.assertEqual(state.status, Status.RUNNING)
+        self.assertEqual(state.snakes["player1"].direction, Direction.RIGHT)
+        self.assertEqual(state.snakes["player2"].direction, Direction.LEFT)
+        screen.update(state.tick_interval_ms / 1000 + 0.001)
+        self.assertEqual(state.snakes["player1"].head, (6, 4))
+        self.assertEqual(state.snakes["player2"].head, (12, 4))
+        self.assertIn("P1: 0", screen.hud_text())
+        self.assertIn("P2: 0", screen.hud_text())
+
 
 if __name__ == "__main__":
     unittest.main()
