@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import sqlite3
 
+from db.extensions import apply_extensions
 from db.schema import SCHEMA, TABLE_NAMES
 
 
@@ -42,6 +43,7 @@ def initialize_database(db_path=None):
     connection = _open_connection(path)
     try:
         connection.executescript(SCHEMA)
+        apply_extensions(connection)
         connection.commit()
     finally:
         connection.close()

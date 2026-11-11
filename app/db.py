@@ -24,6 +24,19 @@ CREATE TABLE IF NOT EXISTS scores (
 
 CREATE INDEX IF NOT EXISTS idx_scores_user ON scores(user_id);
 CREATE INDEX IF NOT EXISTS idx_scores_score ON scores(score DESC);
+
+CREATE TABLE IF NOT EXISTS sessions (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    token_hash   TEXT NOT NULL UNIQUE,
+    user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at   REAL NOT NULL,
+    last_seen_at REAL NOT NULL,
+    expires_at   REAL NOT NULL,
+    ended_at     REAL,
+    end_reason   TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id, ended_at);
 """
 
 

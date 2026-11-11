@@ -1,10 +1,12 @@
-"""S1-14 Registration (bcrypt) and S1-15 Authentication / session handling."""
+"""S1-14 Registration (bcrypt), S1-15 Authentication / session handling
+and S2-13 Logout / session termination."""
 import functools
 import sqlite3
 
 import bcrypt
 from flask import Blueprint, g, jsonify, request, session
 
+from . import sessions
 from .db import get_db
 from .validators import (ValidationError, validate_email, validate_password,
                          validate_username)
@@ -30,15 +32,20 @@ def check_password(password: str, password_hash: bytes) -> bool:
 # ---------- session helpers ----------
 @bp.before_app_request
 def load_logged_in_user():
-    user_id = session.get("user_id")
     g.user = None
-    if user_id is not None:
-        row = get_db().execute(
-            "SELECT id, username, email FROM users WHERE id = ?", (user_id,)
-        ).fetchone()
-        g.user = dict(row) if row else None
+    token = session.get("sid")
+    if token is not None:
+        g.user = sessions.load_user(token)
         if g.user is None:
-            session.clear()
+            session.clear()   # stale, ended or forged cookie
+
+
+@bp.after_app_request
+def no_store(response):
+    # API answers may contain account data: never let a cache keep them.
+    if request.path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 def login_required(view):
@@ -97,15 +104,28 @@ def login():
         return jsonify(error="Invalid username or password."), 401
 
     session.clear()  # prevents session fixation
-    session["user_id"] = row["id"]
+    session["sid"] = sessions.start(row["id"])
     session.permanent = True
     return jsonify(id=row["id"], username=row["username"])
 
 
 @bp.post("/logout")
 def logout():
+    """End the server-side session, then forget the cookie (S2-13)."""
+    token = session.get("sid")
+    if token is not None:
+        sessions.end(token)
     session.clear()
     return jsonify(message="Logged out."), 200
+
+
+@bp.post("/logout-all")
+@login_required
+def logout_all():
+    """Log this account out everywhere, e.g. after a lost device."""
+    ended = sessions.end_all(g.user["id"])
+    session.clear()
+    return jsonify(message="Logged out everywhere.", sessions_ended=ended)
 
 
 @bp.get("/me")
