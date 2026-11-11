@@ -53,9 +53,28 @@ speed. The SRS names difficulty selection but does not define numeric speeds.
 ## Game modes
 
 The mode registry lists Classic, Obstacle, Power-Up, Two-Player Battle, and
-Survival. The development runner lets you select them with keys `1` through
-`5`. Classic is implemented; selecting another registered mode reports that
-it is not implemented yet and returns to the mode list.
+Survival. The mode screen lets you select them with keys `1` through `5`.
+Classic, Obstacle, and Survival are implemented; selecting Power-Up or
+Two-Player Battle reports that it is not implemented yet and returns to the
+mode list.
+
+- **Obstacle Mode** places obstacles on about 4% of the board when the game
+  starts. They never cover the snake or the cells right in front of it, and
+  they never wall off part of the board, so every cell stays reachable.
+  Hitting one ends the game.
+- **Survival Mode** starts with an empty board and gets harder as you eat:
+  every 3 foods the level goes up, the snake moves 8 ms faster (never below
+  40 ms), and 2 more obstacles appear (up to 10% of the board). The current
+  level is shown in the HUD.
+
+Mode rules live in `modes/rules.py`; obstacle placement is in
+`engine/obstacles.py`.
+
+## Performance
+
+`python benchmarks/engine_benchmark.py` measures the engine against the SRS
+budgets (30 FPS, 100 ms input response). The engine uses well under 1% of a
+frame; see `docs/performance.md` for the numbers.
 
 ## Pause and resume
 

@@ -1,5 +1,5 @@
 """Snake Controller (SNAKE-F-009): movement, direction changes and growth."""
-from collections import deque
+from collections import Counter, deque
 from enum import Enum
 
 
@@ -16,7 +16,12 @@ class Direction(Enum):
 
 
 class Snake:
-    """A snake on a grid. The head is body[0]; cells are (x, y) tuples."""
+    """A snake on a grid. The head is body[0]; cells are (x, y) tuples.
+
+    ``body`` is exposed for drawing, but change it only through the methods
+    below: the snake also keeps a count of how many segments sit on each cell,
+    which makes the self-collision check O(1) instead of O(length).
+    """
 
     def __init__(self, start, direction=Direction.RIGHT, length=3):
         x, y = start
@@ -24,6 +29,7 @@ class Snake:
         self.direction = direction          # direction used by the last move
         self._pending = direction           # direction requested for the next move
         self.body = deque((x - dx * i, y - dy * i) for i in range(length))
+        self._counts = Counter(self.body)
         self._to_grow = 0
 
     @property
@@ -49,14 +55,22 @@ class Snake:
         hx, hy = self.head
         new_head = (hx + dx, hy + dy)
         self.body.appendleft(new_head)
+        self._counts[new_head] += 1
         if self._to_grow > 0:
             self._to_grow -= 1
         else:
-            self.body.pop()
+            tail = self.body.pop()
+            self._counts[tail] -= 1
+            if self._counts[tail] == 0:
+                del self._counts[tail]
         return new_head
 
+    def head_overlaps_body(self):
+        """True if the head shares a cell with any other body segment."""
+        return self._counts[self.head] > 1
+
     def cells(self):
-        return set(self.body)
+        return set(self._counts)
 
     def __len__(self):
         return len(self.body)
