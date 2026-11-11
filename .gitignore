@@ -21,6 +21,7 @@ instance/
 .pytest_cache/
 .coverage
 htmlcov/
+scratch*
 
 # macOS
 .DS_Store

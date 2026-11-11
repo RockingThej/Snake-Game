@@ -102,6 +102,12 @@ backend only.
 
 ## Documentation
 
-- Software Requirements Specification (SRS)
-- Software Architecture and Design Specification (SAD)
-- Software Test Plan (STP)
+- [Software Requirements Specification (SRS v2.0)](docs/SRS.md)
+- [Software Architecture and Design Specification (SAD v2.0)](docs/SAD.md)
+- [Software Test Plan (STP v2.0)](docs/STP.md)
+- [Project Deviations & Architectural Decisions Report](docs/deviations.md)
+- [Requirements Traceability Matrix (RTM)](docs/RTM.md)
+- [Sprint 2 Modules Guide](docs/SPRINT2-modules.md)
+- [Performance & Benchmarks Report](docs/performance.md)
+- [ADR-001: Technology Stack](docs/ADR-001-tech-stack.md)
+- Original Drafts (Sprint 0 Baseline): [SRS PDF](SnakeGame_Team6_SRS.pdf), [SAD PDF](SnakeGame_Team6_SAD.pdf), [STP PDF](SnakeGame_Team6_STP.pdf)
