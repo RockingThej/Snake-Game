@@ -7,7 +7,8 @@ from auth.guarded_session import GuardedSession
 from db import initialize_database
 from ui.auth_screens import LoginScreen, RegisterScreen
 from ui.leaderboard_screen import LeaderboardScreen
-from ui.menu_screens import GameOverScreen, MainMenuScreen
+from ui.menu_screens import (AdminScreen, GameOverScreen, MainMenuScreen,
+                            ProfileScreen, SettingsScreen)
 from ui.screen_manager import ScreenManager
 
 WINDOW_SIZE = (900, 640)   # matches a 30x20 board plus the HUD
@@ -36,6 +37,9 @@ def build_app(db_path=None):
     def make_menu():
         return MainMenuScreen(username=session.username,
                               on_leaderboard=show_leaderboard,
+                              on_profile=show_profile,
+                              on_settings=show_settings,
+                              on_admin=show_admin if session.is_admin else None,
                               on_logout=logout)
 
     def after_auth(username):
@@ -45,6 +49,17 @@ def build_app(db_path=None):
     def logout():
         session.logout()
         manager.replace(make_login())
+
+    def show_profile():
+        manager.push(ProfileScreen(username=session.username,
+                                  stats={"best_score": 0,
+                                         "favorite_mode": "Classic"}))
+
+    def show_settings():
+        manager.push(SettingsScreen())
+
+    def show_admin():
+        manager.push(AdminScreen(username=session.username))
 
     def show_leaderboard():
         manager.push(LeaderboardScreen(session.leaderboard()))

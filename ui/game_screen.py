@@ -18,6 +18,20 @@ FOOD = (230, 70, 70)
 OBSTACLE = (110, 110, 125)
 TEXT = (230, 230, 230)
 WARNING = (255, 220, 120)
+POWERUP_COLORS = {
+    "speed_boost": (100, 255, 120),
+    "slow_down": (100, 150, 255),
+    "shield": (255, 215, 0),
+    "score_multiplier": (255, 120, 200),
+    "snake_shrink": (180, 80, 255),
+}
+POWERUP_LABELS = {
+    "speed_boost": "Speed Boost",
+    "slow_down": "Slow Down",
+    "shield": "Shield",
+    "score_multiplier": "Score Multiplier",
+    "snake_shrink": "Snake Shrink",
+}
 
 DIFFICULTY_KEYS = {pygame.K_1: "easy", pygame.K_2: "medium", pygame.K_3: "hard"}
 
@@ -148,6 +162,7 @@ class GameScreen:
             pygame.draw.rect(surface, head_color, cell_rect(*snake.head))
         if state.food:
             pygame.draw.rect(surface, FOOD, cell_rect(*state.food, inset=4))
+        self._draw_powerups(surface)
         self._text(surface, self.hud_text(), (10, 10))
         message = self.message()
         if state.status == Status.PAUSED:
@@ -166,12 +181,21 @@ class GameScreen:
                 "P%d: %d" % (i, score)
                 for i, score in enumerate(s.scores.values(), start=1)
             )
-            return "%s   Mode: %s   Difficulty: %s" % (
+            text = "%s   Mode: %s   Difficulty: %s" % (
                 scores, s.mode.replace("_", " ").title(), s.difficulty.title())
-        text = "Score: %d   Mode: %s   Difficulty: %s" % (
-            s.score, s.mode.replace("_", " ").title(), s.difficulty.title())
+        else:
+            text = "Score: %d   Mode: %s   Difficulty: %s" % (
+                s.score, s.mode.replace("_", " ").title(), s.difficulty.title())
         if s.mode == "survival":
             text += "   Level: %d" % s.level
+        active = getattr(s, "active_powerups", {}) or {}
+        if active:
+            items = []
+            for name, remaining in sorted(active.items()):
+                remaining_s = max(0, int(remaining / 1000))
+                label = POWERUP_LABELS.get(name, name.replace("_", " ").title())
+                items.append(f"{label} {remaining_s}s")
+            text += "   Active: " + " | ".join(items)
         return text
 
     def message(self):
@@ -193,6 +217,18 @@ class GameScreen:
             return "Game over (%s) - R: restart, Esc: back" % (
                 s.collision.value if s.collision else "win")
         return ""
+
+    def _draw_powerups(self, surface):
+        for item in getattr(self.state, "powerups", []) or []:
+            if len(item) == 2 and isinstance(item[0], str):
+                name, pos = item
+            elif len(item) == 2 and isinstance(item[0], tuple):
+                pos, name = item
+            else:
+                continue
+            if name not in POWERUP_COLORS:
+                continue
+            pygame.draw.rect(surface, POWERUP_COLORS[name], cell_rect(*pos, inset=5))
 
     def _text(self, surface, text, pos, center=False):
         if self.font is None:

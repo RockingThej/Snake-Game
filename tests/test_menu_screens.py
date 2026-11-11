@@ -12,11 +12,14 @@ except ImportError:  # pragma: no cover - optional runtime dependency
 from engine.game_state import GameState  # noqa: E402
 from modes import GameModeManager  # noqa: E402
 from ui.menu_screens import (  # noqa: E402
+    AdminScreen,
     BattleResultsScreen,
     DifficultySelectionScreen,
     GameOverScreen,
     MainMenuScreen,
     ModeSelectionScreen,
+    ProfileScreen,
+    SettingsScreen,
 )
 from ui.screen_manager import ScreenManager  # noqa: E402
 
@@ -41,7 +44,8 @@ class TestMenuScreens(unittest.TestCase):
         screen = ModeSelectionScreen(mode_manager=manager)
 
         self.assertIn("Classic", screen.mode_text())
-        self.assertIn("coming soon", screen.mode_text().lower())
+        self.assertIn("power-up - available", screen.mode_text().lower())
+        self.assertNotIn("coming soon", screen.mode_text().lower())
 
     def test_difficulty_selection_updates_state(self):
         state = GameState(width=10, height=10)
@@ -57,6 +61,55 @@ class TestMenuScreens(unittest.TestCase):
         screen = GameOverScreen(state)
 
         self.assertIn("42", screen.score_text())
+
+    def test_profile_and_settings_are_accessible_from_main_menu(self):
+        manager = ScreenManager()
+        profile = ProfileScreen(username="alice")
+        settings = SettingsScreen()
+        menu = MainMenuScreen(
+            username="alice",
+            on_profile=lambda: manager.push(profile),
+            on_settings=lambda: manager.push(settings),
+        )
+        manager.push(menu)
+
+        menu.handle_event(key(pygame.K_4))
+        self.assertIsInstance(manager.current, ProfileScreen)
+
+        manager.pop()
+        menu.handle_event(key(pygame.K_5))
+        self.assertIsInstance(manager.current, SettingsScreen)
+
+    def test_profile_screen_lists_user_summary(self):
+        screen = ProfileScreen(username="alice")
+
+        self.assertIn("alice", screen.profile_lines())
+        self.assertIn("Profile", screen.title)
+
+    def test_settings_screen_updates_preferences(self):
+        screen = SettingsScreen()
+
+        screen.handle_event(key(pygame.K_2))
+        self.assertEqual(screen.settings["difficulty"], "hard")
+
+    def test_admin_menu_and_screen_are_available_to_admins(self):
+        manager = ScreenManager()
+        admin = AdminScreen(username="root")
+        menu = MainMenuScreen(
+            username="root",
+            on_admin=lambda: manager.push(admin),
+        )
+        manager.push(menu)
+
+        self.assertIn("Admin", "\n".join(menu.options()))
+        menu.handle_event(key(pygame.K_6))
+        self.assertIsInstance(manager.current, AdminScreen)
+
+    def test_admin_screen_lists_actions(self):
+        screen = AdminScreen(username="root")
+
+        self.assertIn("root", screen.admin_lines())
+        self.assertIn("User list", screen.admin_lines())
 
     def test_battle_results_show_both_scores_and_winner(self):
         state = GameModeManager().create_game("two_player_battle")

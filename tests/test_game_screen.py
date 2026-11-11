@@ -120,6 +120,18 @@ class TestGameScreen(unittest.TestCase):
         screen.draw(surface)
         self.assertEqual(surface.get_at((5, 45))[:3], (110, 110, 125))
 
+    def test_active_powerups_are_shown_in_hud(self):
+        screen, _ = self.make()
+        screen.state.active_powerups = {"shield": 7000, "speed_boost": 5000}
+        screen.state.powerups = [("shield", (1, 1)), ("speed_boost", (2, 2))]
+        hud = screen.hud_text()
+        self.assertIn("Active:", hud)
+        self.assertIn("Shield", hud)
+        self.assertIn("Speed Boost", hud)
+        surface = pygame.Surface(window_size(screen.state))
+        screen.draw(surface)
+        self.assertIsNotNone(surface)
+
     def test_wasd_keys_steer_the_snake(self):
         screen, _ = self.make()
         screen.handle_event(key(pygame.K_w))
