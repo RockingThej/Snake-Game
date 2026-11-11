@@ -11,6 +11,7 @@ ties that to a server-side session, so:
 To use it in the launcher, replace ``Session(db_path=db_path)`` with
 ``GuardedSession(db_path=db_path)`` in ``main.build_app``.
 """
+from auth.secure_auth import SecureAuth
 from auth.session_manager import SessionError, SessionManager
 from ui.session import Session
 
@@ -22,8 +23,9 @@ class NotAuthenticatedError(PermissionError):
 class GuardedSession(Session):
     def __init__(self, auth=None, db_path=None, on_game_over=None,
                  manager=None, policy=None):
-        super().__init__(auth=auth, db_path=db_path,
-                         on_game_over=on_game_over)
+        # SecureAuth also refuses accounts an administrator disabled.
+        super().__init__(auth=auth or SecureAuth(db_path=db_path),
+                         db_path=db_path, on_game_over=on_game_over)
         self.manager = manager or SessionManager(db_path, policy=policy)
         self.token = None
 
