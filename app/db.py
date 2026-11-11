@@ -37,6 +37,13 @@ CREATE TABLE IF NOT EXISTS sessions (
 );
 
 CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id, ended_at);
+
+-- S2-16: a saved score can be deleted but never edited.
+CREATE TRIGGER IF NOT EXISTS scores_are_immutable
+BEFORE UPDATE ON scores
+BEGIN
+    SELECT RAISE(ABORT, 'saved scores cannot be modified');
+END;
 """
 
 

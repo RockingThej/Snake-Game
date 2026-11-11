@@ -13,6 +13,7 @@ To use it in the launcher, replace ``Session(db_path=db_path)`` with
 """
 from auth.secure_auth import SecureAuth
 from auth.session_manager import SessionError, SessionManager
+from scoring.integrity import InvalidScoreError, submit_score
 from ui.session import Session
 
 
@@ -41,6 +42,21 @@ class GuardedSession(Session):
             self._forget()
             return False
         return info.user_id == self.user_id
+
+    def save_result(self, state):
+        """Store a finished game through the integrity checks (S2-16).
+
+        Returns the score id, or ``None`` when nobody is logged in or the
+        result is not acceptable (nothing is stored in that case).
+        """
+        if not self.logged_in:
+            return None
+        try:
+            return submit_score(
+                self.user_id, state.score, state.mode, state.difficulty,
+                actor_id=self.user_id, db_path=self.db_path)
+        except InvalidScoreError:
+            return None
 
     def require_login(self):
         """Return the user id, or raise NotAuthenticatedError."""

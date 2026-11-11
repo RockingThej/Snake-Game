@@ -13,7 +13,7 @@ from auth.session_manager import SessionManager
 from auth.session_policy import ACCOUNT_CHANGED
 from db import admin_repository as repo
 from db import get_leaderboard, get_scores_for_user, get_user_by_id
-from scoring import stats
+from scoring import integrity, stats
 
 MAX_PAGE = 200
 
@@ -191,6 +191,25 @@ class AdminService:
                     "user:%d:%s" % (user_id, user["username"]),
                     "scores deleted: %d" % removed)
         return removed
+
+    def check_data_integrity(self):
+        """Compare the leaderboard with the saved scores (SNAKE-SR-004).
+
+        Returns ``scoring.integrity.IntegrityReport``; ``report.ok`` is True
+        when nothing is wrong.
+        """
+        self._authorize()
+        report = integrity.verify_integrity(db_path=self.db_path)
+        self._audit("check_integrity", None,
+                    "problems: %d" % len(report.problems))
+        return report
+
+    def rebuild_leaderboard(self):
+        """Recompute every leaderboard row from the saved scores."""
+        self._authorize()
+        rows = integrity.rebuild_leaderboard(db_path=self.db_path)
+        self._audit("rebuild_leaderboard", None, "rows: %d" % rows)
+        return rows
 
     # ------------------------------------------------------- statistics
     def game_statistics(self):
