@@ -161,6 +161,13 @@ class GameScreen:
 
     def hud_text(self):
         s = self.state
+        if hasattr(s, "scores"):
+            scores = "   ".join(
+                "P%d: %d" % (i, score)
+                for i, score in enumerate(s.scores.values(), start=1)
+            )
+            return "%s   Mode: %s   Difficulty: %s" % (
+                scores, s.mode.replace("_", " ").title(), s.difficulty.title())
         text = "Score: %d   Mode: %s   Difficulty: %s" % (
             s.score, s.mode.replace("_", " ").title(), s.difficulty.title())
         if s.mode == "survival":
