@@ -14,6 +14,7 @@ from db import (
     get_user_by_username,
     initialize_database,
     save_score,
+    save_scores,
 )
 
 
@@ -107,6 +108,19 @@ class TestRepositories(unittest.TestCase):
         with self.assertRaises(sqlite3.IntegrityError):
             save_score(99999, 10, "classic", "easy", self.db_path)
         self.assertEqual(get_leaderboard(db_path=self.db_path), [])
+
+    def test_batch_score_save_rolls_back_if_one_user_is_invalid(self):
+        with self.assertRaises(sqlite3.IntegrityError):
+            save_scores(
+                [(self.alice, 10), (99999, 20)],
+                "two_player_battle",
+                "medium",
+                self.db_path,
+            )
+
+        self.assertEqual(
+            get_scores_for_user(self.alice, db_path=self.db_path), []
+        )
 
 
 if __name__ == "__main__":

@@ -147,6 +147,25 @@ class TestGameScreen(unittest.TestCase):
         self.assertIn("P1: 0", screen.hud_text())
         self.assertIn("P2: 0", screen.hud_text())
 
+    def test_two_player_game_over_opens_results_screen(self):
+        from engine.snake import Snake
+        from modes import GameModeManager
+        from ui.menu_screens import BattleResultsScreen
+
+        state = GameModeManager().create_game(
+            "two_player_battle", width=18, height=10
+        )
+        state.snakes["player1"] = Snake((0, 0), Direction.LEFT, length=1)
+        screen = GameScreen(state)
+        manager = ScreenManager()
+        manager.push(screen)
+        state.start()
+
+        screen.update(state.tick_interval_ms / 1000 + 0.001)
+
+        self.assertIsInstance(manager.current, BattleResultsScreen)
+        self.assertEqual(manager.current.winner_text(), "Player 2 wins")
+
 
 if __name__ == "__main__":
     unittest.main()

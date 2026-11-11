@@ -62,9 +62,15 @@ class GameScreen:
         else:
             from modes import GameModeManager
             old = self.state
+            options = {
+                "width": old.width,
+                "height": old.height,
+                "difficulty": old.difficulty,
+            }
+            if hasattr(old, "player_ids"):
+                options["player_ids"] = old.player_ids
             self.state = GameModeManager().create_game(
-                old.mode, width=old.width, height=old.height,
-                difficulty=old.difficulty)
+                old.mode, **options)
         self.elapsed = 0.0
         self._finished = False
 
@@ -113,6 +119,11 @@ class GameScreen:
         if self._finished or self.state.status != Status.GAME_OVER:
             return
         self._finished = True
+        if hasattr(self.state, "scores") and self.manager is not None:
+            from ui.menu_screens import BattleResultsScreen
+
+            self.manager.replace(BattleResultsScreen(self.state))
+            return
         session = getattr(self.manager, "session", None)
         if session is not None:
             session.finish_game(self.state)

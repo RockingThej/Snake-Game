@@ -12,6 +12,7 @@ __all__ = [
     "ModeSelectionScreen",
     "DifficultySelectionScreen",
     "GameOverScreen",
+    "BattleResultsScreen",
 ]
 
 
@@ -37,4 +38,7 @@ def __getattr__(name):
     if name == "GameOverScreen":
         from ui.menu_screens import GameOverScreen
         return GameOverScreen
+    if name == "BattleResultsScreen":
+        from ui.menu_screens import BattleResultsScreen
+        return BattleResultsScreen
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

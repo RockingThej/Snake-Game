@@ -7,6 +7,7 @@ except ImportError:  # pragma: no cover - optional runtime dependency
 
 from engine.game_state import GameState
 from modes import GameModeManager
+from scoring import ScoreManager
 from ui.game_screen import GameScreen
 from ui.screen_manager import Screen
 
@@ -139,8 +140,10 @@ class MainMenuScreen(BaseMenuScreen):
 class ModeSelectionScreen(BaseMenuScreen):
     """Pick the game mode from the registry."""
 
-    def __init__(self, mode_manager=None, title="Select a game mode"):
+    def __init__(self, mode_manager=None, title="Select a game mode",
+                 player_ids=None):
         self.mode_manager = mode_manager or GameModeManager()
+        self.player_ids = dict(player_ids or {})
         super().__init__(title)
         self.message = ""
 
@@ -175,12 +178,10 @@ class ModeSelectionScreen(BaseMenuScreen):
             self.message = f"{mode.name} is coming soon"
             return
 
-        state = self.mode_manager.create_game(
-            mode.id,
-            width=30,
-            height=20,
-            difficulty="medium",
-        )
+        options = {"width": 30, "height": 20, "difficulty": "medium"}
+        if mode.id == "two_player_battle":
+            options["player_ids"] = self.player_ids
+        state = self.mode_manager.create_game(mode.id, **options)
         if self.manager is not None:
             self.manager.replace(DifficultySelectionScreen(state))
 
@@ -263,6 +264,8 @@ class GameOverScreen(BaseMenuScreen):
                     width=self.state.width,
                     height=self.state.height,
                     difficulty=self.state.difficulty,
+                    **({"player_ids": self.state.player_ids}
+                       if hasattr(self.state, "player_ids") else {}),
                 )
                 state.start()
                 self.manager.replace(GameScreen(state))
@@ -293,3 +296,74 @@ class GameOverScreen(BaseMenuScreen):
         self._draw_text(surface, "M. Menu", (80, 260))
         if self.on_leaderboard is not None:
             self._draw_text(surface, "L. Leaderboard", (80, 300))
+
+
+class BattleResultsScreen(BaseMenuScreen):
+    """Show and persist the final scores for a two-player battle."""
+
+    def __init__(self, state, score_manager=None, title="Battle Results"):
+        self.state = state
+        self.score_manager = score_manager or ScoreManager()
+        self.save_message = "Results have not been saved"
+        super().__init__(title)
+
+    def on_enter(self):
+        if self.state.result_score_ids is not None:
+            self.save_message = "Results saved to player profiles"
+            return
+        self.save_result()
+
+    def save_result(self):
+        try:
+            self.state.result_score_ids = self.score_manager.save_battle_result(
+                self.state
+            )
+            self.save_message = "Results saved to player profiles"
+            return True
+        except (ValueError, OSError) as exc:
+            self.save_message = f"Results not saved: {exc}"
+        except Exception as exc:  # database failures should not hide results
+            self.save_message = f"Could not save results: {exc}"
+        return False
+
+    def scores_text(self):
+        scores = self.state.scores
+        return f"Player 1: {scores['player1']}     Player 2: {scores['player2']}"
+
+    def winner_text(self):
+        if self.state.winner is None:
+            return "Draw"
+        player = self.state.winner.replace("player", "Player ").title()
+        return f"{player} wins"
+
+    def handle_event(self, event):
+        _require_pygame()
+        if event.type != pygame.KEYDOWN:
+            return
+        if event.key == pygame.K_s and self.state.result_score_ids is None:
+            self.save_result()
+        elif event.key == pygame.K_r and self.manager is not None:
+            state = GameModeManager().create_game(
+                self.state.mode,
+                width=self.state.width,
+                height=self.state.height,
+                difficulty=self.state.difficulty,
+                player_ids=self.state.player_ids,
+            )
+            self.manager.replace(GameScreen(state))
+        elif event.key in (pygame.K_m, pygame.K_ESCAPE):
+            if self.manager is not None:
+                self.manager.replace(MainMenuScreen())
+
+    def draw(self, surface):
+        super().draw(surface)
+        _require_pygame()
+        self._draw_text(surface, self.scores_text(),
+                        (surface.get_width() // 2, 130), center=True)
+        self._draw_text(surface, self.winner_text(),
+                        (surface.get_width() // 2, 180), center=True,
+                        color=(255, 220, 120))
+        self._draw_text(surface, self.save_message,
+                        (surface.get_width() // 2, 230), center=True)
+        self._draw_text(surface, "R. Rematch    M. Menu    S. Retry save",
+                        (surface.get_width() // 2, 290), center=True)
