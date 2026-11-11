@@ -8,13 +8,20 @@ ties that to a server-side session, so:
   saved for it (SNAKE-SR-005),
 * protected code can call ``require_login()``.
 
-To use it in the launcher, replace ``Session(db_path=db_path)`` with
-``GuardedSession(db_path=db_path)`` in ``main.build_app``.
+``main.build_app`` uses it. The desktop policy is more relaxed than the
+web default (``DESKTOP_POLICY``) because one Survival game can last a long
+time; ``touch()`` restarts the idle timer.
 """
 from auth.secure_auth import SecureAuth
 from auth.session_manager import SessionError, SessionManager
+from auth.session_policy import SessionPolicy
 from scoring.integrity import InvalidScoreError, submit_score
 from ui.session import Session
+
+
+# Idle for 2 hours or logged in for 12 hours ends a desktop session.
+DESKTOP_POLICY = SessionPolicy(idle_timeout=2 * 60 * 60,
+                               absolute_timeout=12 * 60 * 60)
 
 
 class NotAuthenticatedError(PermissionError):
@@ -27,7 +34,8 @@ class GuardedSession(Session):
         # SecureAuth also refuses accounts an administrator disabled.
         super().__init__(auth=auth or SecureAuth(db_path=db_path),
                          db_path=db_path, on_game_over=on_game_over)
-        self.manager = manager or SessionManager(db_path, policy=policy)
+        self.manager = manager or SessionManager(
+            db_path, policy=policy or DESKTOP_POLICY)
         self.token = None
 
     # -- state -----------------------------------------------------------

@@ -18,6 +18,8 @@ def create_app(test_config=None):
         SESSION_COOKIE_SAMESITE="Lax",
         SESSION_COOKIE_SECURE=os.environ.get("COOKIE_SECURE", "0") == "1",
         PERMANENT_SESSION_LIFETIME=timedelta(hours=1),
+        # S2-17: refuse oversized request bodies (HTTP 413)
+        MAX_CONTENT_LENGTH=64 * 1024,
     )
     if test_config:
         app.config.update(test_config)

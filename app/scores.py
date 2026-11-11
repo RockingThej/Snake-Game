@@ -4,7 +4,8 @@ from flask import Blueprint, g, jsonify, request
 from .auth import login_required
 from .db import get_db
 from .validators import (MAX_DURATION_SECONDS, MAX_FOOD_EATEN, MAX_SCORE,
-                         ValidationError, validate_difficulty, validate_int)
+                         ValidationError, require_json_object,
+                         validate_difficulty, validate_int)
 
 bp = Blueprint("scores", __name__, url_prefix="/api/scores")
 
@@ -71,7 +72,7 @@ def handle_validation_error(err):
 @bp.post("")
 @login_required
 def submit_score():
-    data = request.get_json(silent=True) or {}
+    data = require_json_object(request.get_json(silent=True) or {})
     result = ScoreManager.save_score(
         g.user["id"],
         data.get("food_eaten"),

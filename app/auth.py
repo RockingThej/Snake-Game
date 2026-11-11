@@ -8,7 +8,8 @@ from flask import Blueprint, g, jsonify, request, session
 
 from . import sessions
 from .db import get_db
-from .validators import (ValidationError, validate_email, validate_password,
+from .validators import (ValidationError, require_json_object,
+                         validate_email, validate_password,
                          validate_username)
 
 bp = Blueprint("auth", __name__, url_prefix="/api/auth")
@@ -65,7 +66,7 @@ def handle_validation_error(err):
 # ---------- routes ----------
 @bp.post("/register")
 def register():
-    data = request.get_json(silent=True) or {}
+    data = require_json_object(request.get_json(silent=True) or {})
     username = validate_username(data.get("username"))
     email = validate_email(data.get("email"))
     password = validate_password(data.get("password"))
@@ -85,7 +86,7 @@ def register():
 
 @bp.post("/login")
 def login():
-    data = request.get_json(silent=True) or {}
+    data = require_json_object(request.get_json(silent=True) or {})
     identifier = data.get("username")
     password = data.get("password")
     if not isinstance(identifier, str) or not isinstance(password, str):

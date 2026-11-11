@@ -3,12 +3,12 @@
 Run from the repo root:  python main.py
 (run.py starts the Flask backend; this starts the desktop game.)
 """
+from auth.guarded_session import GuardedSession
 from db import initialize_database
 from ui.auth_screens import LoginScreen, RegisterScreen
 from ui.leaderboard_screen import LeaderboardScreen
 from ui.menu_screens import GameOverScreen, MainMenuScreen
 from ui.screen_manager import ScreenManager
-from ui.session import Session
 
 WINDOW_SIZE = (900, 640)   # matches a 30x20 board plus the HUD
 
@@ -20,7 +20,7 @@ def build_app(db_path=None):
     """
     initialize_database(db_path)
     manager = ScreenManager()
-    session = Session(db_path=db_path)
+    session = GuardedSession(db_path=db_path)
     manager.session = session
 
     def make_login():

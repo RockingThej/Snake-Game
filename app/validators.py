@@ -98,3 +98,14 @@ def validate_limit(value, default=10, maximum=100):
         raise ValidationError(
             f"limit must be between 1 and {maximum}.", "limit")
     return limit
+
+
+def require_json_object(data):
+    """Return ``data`` if it is a JSON object, else raise ValidationError.
+
+    ``request.get_json()`` happily returns a list, string or number; the
+    routes need a dict, and anything else must be a 400, not a crash.
+    """
+    if not isinstance(data, dict):
+        raise ValidationError("Request body must be a JSON object.")
+    return data
