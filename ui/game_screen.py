@@ -208,8 +208,11 @@ class GameScreen:
             return "PAUSED - press Enter or P to resume"
         if s.status == Status.GAME_OVER:
             if hasattr(s, "snakes"):
-                winner = s.winner.replace("player", "Player ").title()
-                outcome = f"{winner} wins" if s.winner else "Draw"
+                outcome = (
+                    f"{s.winner.replace('player', 'Player ').title()} wins"
+                    if s.winner
+                    else "Draw"
+                )
                 reason = s.collision.value if s.collision else "board full"
                 return (
                     f"{outcome} ({reason}) - R: restart, Esc: back"

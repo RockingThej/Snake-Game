@@ -178,6 +178,30 @@ class TestGameScreen(unittest.TestCase):
         self.assertIsInstance(manager.current, BattleResultsScreen)
         self.assertEqual(manager.current.winner_text(), "Player 2 wins")
 
+    def test_two_player_draw_collision_message_and_screen(self):
+        from engine.snake import Snake
+        from modes import GameModeManager
+        from ui.menu_screens import BattleResultsScreen
+
+        state = GameModeManager().create_game(
+            "two_player_battle", width=18, height=10
+        )
+        state.snakes["player1"] = Snake((5, 5), Direction.RIGHT, length=1)
+        state.snakes["player2"] = Snake((7, 5), Direction.LEFT, length=1)
+        screen = GameScreen(state)
+        manager = ScreenManager()
+        manager.push(screen)
+        state.start()
+
+        # Both snakes move into each other's cell (head-swap collision -> draw)
+        screen.update(state.tick_interval_ms / 1000 + 0.001)
+
+        self.assertEqual(state.status, Status.GAME_OVER)
+        self.assertIsNone(state.winner)
+        self.assertIn("Draw", screen.message())
+        self.assertIsInstance(manager.current, BattleResultsScreen)
+        self.assertEqual(manager.current.winner_text(), "Draw")
+
 
 if __name__ == "__main__":
     unittest.main()

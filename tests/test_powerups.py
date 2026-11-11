@@ -52,6 +52,57 @@ class TestPowerUps(unittest.TestCase):
 
         self.assertLess(len(state.snake.body), before)
 
+    def test_power_up_spawns_at_setup(self):
+        state = GameState(width=12, height=10, mode="power_up")
+        self.assertGreaterEqual(len(state.powerups), 1)
+        name, pos = state.powerups[0]
+        self.assertIn(name, ("speed_boost", "slow_down", "shield", "score_multiplier", "snake_shrink"))
+        self.assertTrue(0 <= pos[0] < 12 and 0 <= pos[1] < 10)
+
+    def test_collecting_power_up_activates_it(self):
+        from engine.snake import Direction, Snake
+        from engine.game_state import Status
+
+        state = GameState(width=12, height=10, mode="power_up")
+        state.snake = Snake((5, 5), Direction.RIGHT, length=3)
+        state.powerups = [("shield", (6, 5))]
+        state.start()
+
+        state.tick()
+
+        self.assertEqual(state.status, Status.RUNNING)
+        self.assertEqual(state.powerups, [])
+        self.assertIn("shield", state.active_powerups)
+
+    def test_shield_absorbs_wall_collision(self):
+        from engine.snake import Direction, Snake
+        from engine.game_state import Status
+
+        state = GameState(width=12, height=10, mode="power_up")
+        state.snake = Snake((0, 5), Direction.LEFT, length=3)
+        state.apply_power_up("shield")
+        state.start()
+
+        state.tick()
+
+        # Snake should not die; shield should be consumed and snake moved back to (0, 5)
+        self.assertEqual(state.status, Status.RUNNING)
+        self.assertNotIn("shield", state.active_powerups)
+        self.assertEqual(state.snake.head, (0, 5))
+
+    def test_score_multiplier_doubles_points(self):
+        from engine.snake import Direction, Snake
+
+        state = GameState(width=12, height=10, mode="power_up")
+        state.snake = Snake((5, 5), Direction.RIGHT, length=3)
+        state.food = (6, 5)
+        state.apply_power_up("score_multiplier")
+        state.start()
+
+        state.tick()
+
+        self.assertEqual(state.score, state.POINTS_PER_FOOD * 2)
+
 
 if __name__ == "__main__":
     unittest.main()

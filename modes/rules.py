@@ -23,6 +23,9 @@ class ModeRules:
     def on_food_eaten(self, state):
         return None
 
+    def on_tick(self, state):
+        return None
+
 
 class ObstacleRules(ModeRules):
     """A fixed set of obstacles is placed on the board when the game starts."""
@@ -81,8 +84,59 @@ class SurvivalRules(ModeRules):
             existing=state.obstacles)
 
 
+class PowerUpRules(ModeRules):
+    """Spawns collectible power-up items on the board.
+
+    When collected, activates one of 5 temporary effects:
+    speed_boost, slow_down, shield, score_multiplier, snake_shrink.
+    """
+
+    id = "power_up"
+    MAX_ON_BOARD = 2
+    SPAWN_INTERVAL_TICKS = 15
+
+    def __init__(self):
+        self.tick_count = 0
+
+    def setup(self, state):
+        state.powerups = []
+        self.spawn_power_up(state)
+
+    def spawn_power_up(self, state):
+        """Spawn a random power-up at an unoccupied cell."""
+        if not hasattr(state, "powerups") or state.powerups is None:
+            state.powerups = []
+        if len(state.powerups) >= self.MAX_ON_BOARD:
+            return None
+        from modes.powerups import POWERUP_TYPES
+        from engine.food import spawn_food
+
+        occupied = state._occupied()
+        if getattr(state, "food", None) is not None:
+            occupied = occupied | {state.food}
+        pos = spawn_food(state.width, state.height, occupied, state.rng)
+        if pos is None:
+            return None
+        name = state.rng.choice(POWERUP_TYPES)
+        state.powerups.append((name, pos))
+        return (name, pos)
+
+    def on_food_eaten(self, state):
+        """Spawn a power-up when food is eaten if room on the board."""
+        if len(getattr(state, "powerups", [])) < self.MAX_ON_BOARD:
+            self.spawn_power_up(state)
+
+    def on_tick(self, state):
+        """Ensure a power-up spawns periodically if none are on the board."""
+        self.tick_count += 1
+        if not getattr(state, "powerups", []):
+            if self.tick_count >= self.SPAWN_INTERVAL_TICKS:
+                self.tick_count = 0
+                self.spawn_power_up(state)
+
+
 _RULES = {rules.id: rules
-          for rules in (ModeRules, ObstacleRules, SurvivalRules)}
+          for rules in (ModeRules, ObstacleRules, SurvivalRules, PowerUpRules)}
 
 
 def get_rules(mode_id):

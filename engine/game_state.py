@@ -52,17 +52,18 @@ class GameState:
         self.snake = Snake(start=(width // 2, height // 2),
                            direction=Direction.RIGHT, length=3)
         self.obstacles = set()   # filled by the mode rules when needed
+        self.powerups = []       # collectible power-ups placed on board
         self.score = 0
         self.foods_eaten = 0
         self.level = 1
         self.status = Status.READY
         self.collision = None
-        self.rules = get_rules(mode)
-        self.rules.setup(self)           # may place obstacles
-        self.food = spawn_food(width, height, self._occupied(), self.rng)
         self.active_powerups = {}
         self.score_multiplier = 1
         self.powerup_manager = PowerUpManager(self)
+        self.rules = get_rules(mode)
+        self.rules.setup(self)           # may place obstacles or powerups
+        self.food = spawn_food(width, height, self._occupied(), self.rng)
 
     def _apply_shrink(self):
         """Reduce the snake by two segments when a shrink power-up triggers."""
@@ -87,7 +88,13 @@ class GameState:
         return points
 
     def _occupied(self):
-        return self.snake.cells() | self.obstacles
+        occupied = self.snake.cells() | self.obstacles
+        for item in getattr(self, "powerups", []) or []:
+            if len(item) == 2 and isinstance(item[1], tuple):
+                occupied.add(item[1])
+            elif len(item) == 2 and isinstance(item[0], tuple):
+                occupied.add(item[0])
+        return occupied
 
     def start(self):
         if self.status == Status.READY:
@@ -140,18 +147,39 @@ class GameState:
             if "shield" in self.active_powerups:
                 self.powerup_manager.expire("shield")
                 self.active_powerups = self.powerup_manager.active
+                self.snake.undo_move()
                 return
             self.collision = hit
             self.status = Status.GAME_OVER
             return
 
+        if getattr(self, "powerups", None):
+            remaining = []
+            collected = None
+            for item in self.powerups:
+                if len(item) == 2 and isinstance(item[0], str):
+                    name, pos = item
+                elif len(item) == 2 and isinstance(item[0], tuple):
+                    pos, name = item
+                else:
+                    continue
+                if self.snake.head == pos and collected is None:
+                    collected = name
+                else:
+                    remaining.append((name, pos))
+            if collected is not None:
+                self.powerups = remaining
+                self.apply_power_up(collected)
+
         if self.snake.head == self.food:
             self.snake.grow()
             self.score += self._current_food_points()
             self.foods_eaten += 1
-            # Survival Mode speeds up and adds obstacles here
+            # Survival Mode speeds up and adds obstacles here; PowerUp mode spawns powerups
             self.rules.on_food_eaten(self)
             self.food = spawn_food(self.width, self.height,
                                    self._occupied(), self.rng)
             if self.food is None:        # board completely full: player wins
                 self.status = Status.GAME_OVER
+
+        self.rules.on_tick(self)

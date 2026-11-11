@@ -58,12 +58,30 @@ class Snake:
         self._counts[new_head] += 1
         if self._to_grow > 0:
             self._to_grow -= 1
+            self._last_tail = None
         else:
             tail = self.body.pop()
             self._counts[tail] -= 1
             if self._counts[tail] == 0:
                 del self._counts[tail]
+            self._last_tail = tail
         return new_head
+
+    def undo_move(self):
+        """Revert the most recent move step (e.g. absorbed by shield)."""
+        if len(self.body) <= 1:
+            return
+        head = self.body.popleft()
+        self._counts[head] -= 1
+        if self._counts[head] == 0:
+            del self._counts[head]
+        last_tail = getattr(self, "_last_tail", None)
+        if last_tail is not None:
+            self.body.append(last_tail)
+            self._counts[last_tail] += 1
+            self._last_tail = None
+        else:
+            self._to_grow += 1
 
     def head_overlaps_body(self):
         """True if the head shares a cell with any other body segment."""
