@@ -21,6 +21,13 @@ class Session:
     def logged_in(self):
         return self.user_id is not None
 
+    @property
+    def is_admin(self):
+        if not self.logged_in:
+            return False
+        from db.admin_repository import is_admin
+        return is_admin(self.user_id, db_path=self.db_path)
+
     def login(self, username):
         """Remember an already-authenticated user. Return their id."""
         user = get_user_by_username(username.strip(), db_path=self.db_path)

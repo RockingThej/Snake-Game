@@ -82,12 +82,13 @@ class MainMenuScreen(BaseMenuScreen):
 
     def __init__(self, title="Snake Game", username=None,
                  on_leaderboard=None, on_profile=None, on_settings=None,
-                 on_logout=None):
+                 on_admin=None, on_logout=None):
         super().__init__(title)
         self.username = username
         self.on_leaderboard = on_leaderboard
         self.on_profile = on_profile
         self.on_settings = on_settings
+        self.on_admin = on_admin
         self.on_logout = on_logout
 
     def options(self):
@@ -100,6 +101,8 @@ class MainMenuScreen(BaseMenuScreen):
             options.append("4. Profile")
         if self.on_settings is not None:
             options.append("5. Settings")
+        if self.on_admin is not None:
+            options.append("6. Admin")
         return options
 
     def _quit(self):
@@ -131,6 +134,9 @@ class MainMenuScreen(BaseMenuScreen):
             return
         if event.key == pygame.K_5 and self.on_settings is not None:
             self.on_settings()
+            return
+        if event.key == pygame.K_6 and self.on_admin is not None:
+            self.on_admin()
             return
         if event.key == pygame.K_ESCAPE:
             self._quit()
@@ -346,6 +352,53 @@ class SettingsScreen(BaseMenuScreen):
             center=True,
             color=(180, 180, 190),
         )
+
+
+class AdminScreen(BaseMenuScreen):
+    """Minimal administrator dashboard listing the available admin actions."""
+
+    def __init__(self, username=None, title="Admin", on_back=None):
+        self.username = username
+        self.on_back = on_back
+        self.message = ""
+        super().__init__(title)
+
+    def admin_lines(self):
+        return "\n".join([
+            "Administrator: %s" % (self.username or "Guest"),
+            "1. User list",
+            "2. Data integrity",
+            "3. Leaderboard repair",
+            "Esc: back",
+        ])
+
+    def handle_event(self, event):
+        _require_pygame()
+        if event.type != pygame.KEYDOWN:
+            return
+        if event.key in (pygame.K_ESCAPE, pygame.K_RETURN, pygame.K_BACKSPACE):
+            if self.on_back is not None:
+                self.on_back()
+            elif self.manager is not None:
+                self.manager.pop()
+            return
+        if event.key == pygame.K_1:
+            self.message = "User list ready for admin review"
+        elif event.key == pygame.K_2:
+            self.message = "Integrity check queued"
+        elif event.key == pygame.K_3:
+            self.message = "Leaderboard repair queued"
+
+    def draw(self, surface):
+        super().draw(surface)
+        _require_pygame()
+        lines = self.admin_lines().splitlines()
+        for index, line in enumerate(lines):
+            color = (255, 220, 120) if line.startswith("Administrator:") else (230, 230, 230)
+            self._draw_text(surface, line, (80, 100 + index * 36), color=color)
+        if self.message:
+            self._draw_text(surface, self.message, (surface.get_width() // 2, 260),
+                            color=(180, 180, 190), center=True)
 
 
 class GameOverScreen(BaseMenuScreen):

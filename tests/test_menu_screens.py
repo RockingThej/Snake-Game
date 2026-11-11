@@ -12,6 +12,7 @@ except ImportError:  # pragma: no cover - optional runtime dependency
 from engine.game_state import GameState  # noqa: E402
 from modes import GameModeManager  # noqa: E402
 from ui.menu_screens import (  # noqa: E402
+    AdminScreen,
     BattleResultsScreen,
     DifficultySelectionScreen,
     GameOverScreen,
@@ -90,6 +91,25 @@ class TestMenuScreens(unittest.TestCase):
 
         screen.handle_event(key(pygame.K_2))
         self.assertEqual(screen.settings["difficulty"], "hard")
+
+    def test_admin_menu_and_screen_are_available_to_admins(self):
+        manager = ScreenManager()
+        admin = AdminScreen(username="root")
+        menu = MainMenuScreen(
+            username="root",
+            on_admin=lambda: manager.push(admin),
+        )
+        manager.push(menu)
+
+        self.assertIn("Admin", "\n".join(menu.options()))
+        menu.handle_event(key(pygame.K_6))
+        self.assertIsInstance(manager.current, AdminScreen)
+
+    def test_admin_screen_lists_actions(self):
+        screen = AdminScreen(username="root")
+
+        self.assertIn("root", screen.admin_lines())
+        self.assertIn("User list", screen.admin_lines())
 
     def test_battle_results_show_both_scores_and_winner(self):
         state = GameModeManager().create_game("two_player_battle")

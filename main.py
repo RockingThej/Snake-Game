@@ -6,7 +6,7 @@ Run from the repo root:  python main.py
 from db import initialize_database
 from ui.auth_screens import LoginScreen, RegisterScreen
 from ui.leaderboard_screen import LeaderboardScreen
-from ui.menu_screens import (GameOverScreen, MainMenuScreen,
+from ui.menu_screens import (AdminScreen, GameOverScreen, MainMenuScreen,
                             ProfileScreen, SettingsScreen)
 from ui.screen_manager import ScreenManager
 from ui.session import Session
@@ -39,6 +39,7 @@ def build_app(db_path=None):
                               on_leaderboard=show_leaderboard,
                               on_profile=show_profile,
                               on_settings=show_settings,
+                              on_admin=show_admin if session.is_admin else None,
                               on_logout=logout)
 
     def after_auth(username):
@@ -56,6 +57,9 @@ def build_app(db_path=None):
 
     def show_settings():
         manager.push(SettingsScreen())
+
+    def show_admin():
+        manager.push(AdminScreen(username=session.username))
 
     def show_leaderboard():
         manager.push(LeaderboardScreen(session.leaderboard()))
