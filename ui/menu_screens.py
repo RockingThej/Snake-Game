@@ -81,10 +81,13 @@ class MainMenuScreen(BaseMenuScreen):
     """Initial landing screen for the game."""
 
     def __init__(self, title="Snake Game", username=None,
-                 on_leaderboard=None, on_logout=None):
+                 on_leaderboard=None, on_profile=None, on_settings=None,
+                 on_logout=None):
         super().__init__(title)
         self.username = username
         self.on_leaderboard = on_leaderboard
+        self.on_profile = on_profile
+        self.on_settings = on_settings
         self.on_logout = on_logout
 
     def options(self):
@@ -93,6 +96,10 @@ class MainMenuScreen(BaseMenuScreen):
             options.append("2. Leaderboard")
         options.append("3. Log out" if self.on_logout is not None
                        else "3. Exit")
+        if self.on_profile is not None:
+            options.append("4. Profile")
+        if self.on_settings is not None:
+            options.append("5. Settings")
         return options
 
     def _quit(self):
@@ -118,6 +125,12 @@ class MainMenuScreen(BaseMenuScreen):
                 self.on_logout()
             else:
                 self._quit()
+            return
+        if event.key == pygame.K_4 and self.on_profile is not None:
+            self.on_profile()
+            return
+        if event.key == pygame.K_5 and self.on_settings is not None:
+            self.on_settings()
             return
         if event.key == pygame.K_ESCAPE:
             self._quit()
@@ -237,6 +250,102 @@ class DifficultySelectionScreen(BaseMenuScreen):
         ]
         for index, option in enumerate(options):
             self._draw_text(surface, option, (80, 100 + index * 40))
+
+
+class ProfileScreen(BaseMenuScreen):
+    """Read-only account details such as the active username and score summary."""
+
+    def __init__(self, username=None, title="Profile", stats=None, on_back=None):
+        self.username = username
+        self.stats = dict(stats or {})
+        self.on_back = on_back
+        super().__init__(title)
+
+    def profile_lines(self):
+        lines = [
+            "Username: %s" % (self.username or "Guest"),
+            "Best score: %s" % str(self.stats.get("best_score", "0")),
+            "Favorite mode: %s" % str(self.stats.get("favorite_mode", "Classic")),
+        ]
+        return "\n".join(lines)
+
+    def handle_event(self, event):
+        _require_pygame()
+        if event.type != pygame.KEYDOWN:
+            return
+        if event.key in (pygame.K_ESCAPE, pygame.K_RETURN, pygame.K_BACKSPACE):
+            if self.on_back is not None:
+                self.on_back()
+            elif self.manager is not None:
+                self.manager.pop()
+
+    def draw(self, surface):
+        super().draw(surface)
+        _require_pygame()
+        lines = self.profile_lines().splitlines()
+        for index, line in enumerate(lines):
+            self._draw_text(surface, line, (80, 100 + index * 36))
+        self._draw_text(
+            surface,
+            "Esc: back",
+            (surface.get_width() // 2, surface.get_height() - 30),
+            center=True,
+            color=(180, 180, 190),
+        )
+
+
+class SettingsScreen(BaseMenuScreen):
+    """Simple user settings with quick key toggles."""
+
+    def __init__(self, settings=None, title="Settings", on_back=None):
+        self.settings = {
+            "sound": True,
+            "difficulty": "medium",
+            "show_hints": True,
+        }
+        if settings:
+            self.settings.update(settings)
+        self.on_back = on_back
+        super().__init__(title)
+
+    def setting_lines(self):
+        return [
+            "1. Sound: %s" % ("On" if self.settings["sound"] else "Off"),
+            "2. Default difficulty: %s" % self.settings["difficulty"].title(),
+            "3. Show hints: %s" % ("On" if self.settings["show_hints"] else "Off"),
+        ]
+
+    def handle_event(self, event):
+        _require_pygame()
+        if event.type != pygame.KEYDOWN:
+            return
+        if event.key == pygame.K_ESCAPE:
+            if self.on_back is not None:
+                self.on_back()
+            elif self.manager is not None:
+                self.manager.pop()
+            return
+        if event.key == pygame.K_1:
+            self.settings["sound"] = not self.settings["sound"]
+        elif event.key == pygame.K_2:
+            difficulty = ["easy", "medium", "hard"]
+            current = self.settings["difficulty"]
+            self.settings["difficulty"] = difficulty[(difficulty.index(current) + 1) % len(difficulty)]
+        elif event.key == pygame.K_3:
+            self.settings["show_hints"] = not self.settings["show_hints"]
+
+    def draw(self, surface):
+        super().draw(surface)
+        _require_pygame()
+        for index, line in enumerate(self.setting_lines()):
+            self._draw_text(surface, line, (80, 100 + index * 40))
+        self._draw_text(
+            surface,
+            "Esc: back",
+            (surface.get_width() // 2, surface.get_height() - 30),
+            center=True,
+            color=(180, 180, 190),
+        )
 
 
 class GameOverScreen(BaseMenuScreen):

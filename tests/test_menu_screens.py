@@ -17,6 +17,8 @@ from ui.menu_screens import (  # noqa: E402
     GameOverScreen,
     MainMenuScreen,
     ModeSelectionScreen,
+    ProfileScreen,
+    SettingsScreen,
 )
 from ui.screen_manager import ScreenManager  # noqa: E402
 
@@ -58,6 +60,36 @@ class TestMenuScreens(unittest.TestCase):
         screen = GameOverScreen(state)
 
         self.assertIn("42", screen.score_text())
+
+    def test_profile_and_settings_are_accessible_from_main_menu(self):
+        manager = ScreenManager()
+        profile = ProfileScreen(username="alice")
+        settings = SettingsScreen()
+        menu = MainMenuScreen(
+            username="alice",
+            on_profile=lambda: manager.push(profile),
+            on_settings=lambda: manager.push(settings),
+        )
+        manager.push(menu)
+
+        menu.handle_event(key(pygame.K_4))
+        self.assertIsInstance(manager.current, ProfileScreen)
+
+        manager.pop()
+        menu.handle_event(key(pygame.K_5))
+        self.assertIsInstance(manager.current, SettingsScreen)
+
+    def test_profile_screen_lists_user_summary(self):
+        screen = ProfileScreen(username="alice")
+
+        self.assertIn("alice", screen.profile_lines())
+        self.assertIn("Profile", screen.title)
+
+    def test_settings_screen_updates_preferences(self):
+        screen = SettingsScreen()
+
+        screen.handle_event(key(pygame.K_2))
+        self.assertEqual(screen.settings["difficulty"], "hard")
 
     def test_battle_results_show_both_scores_and_winner(self):
         state = GameModeManager().create_game("two_player_battle")
