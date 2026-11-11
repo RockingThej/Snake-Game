@@ -32,7 +32,7 @@ class GameModeManager:
             id="obstacle",
             name="Obstacle",
             selection_key="2",
-            implemented=False,
+            implemented=True,
             description="Navigate around obstacles.",
         ),
         GameMode(
@@ -53,7 +53,7 @@ class GameModeManager:
             id="survival",
             name="Survival",
             selection_key="5",
-            implemented=False,
+            implemented=True,
             description="Survive as the challenge increases.",
         ),
     )
