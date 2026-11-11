@@ -41,7 +41,8 @@ class TestMenuScreens(unittest.TestCase):
         screen = ModeSelectionScreen(mode_manager=manager)
 
         self.assertIn("Classic", screen.mode_text())
-        self.assertIn("coming soon", screen.mode_text().lower())
+        self.assertIn("power-up - available", screen.mode_text().lower())
+        self.assertNotIn("coming soon", screen.mode_text().lower())
 
     def test_difficulty_selection_updates_state(self):
         state = GameState(width=10, height=10)

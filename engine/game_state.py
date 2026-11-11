@@ -22,6 +22,7 @@ from engine import collision
 from engine.food import spawn_food
 from engine.snake import Direction, Snake
 from modes.difficulty import DifficultyManager
+from modes.powerups import PowerUpManager
 from modes.rules import get_rules
 
 
@@ -59,6 +60,31 @@ class GameState:
         self.rules = get_rules(mode)
         self.rules.setup(self)           # may place obstacles
         self.food = spawn_food(width, height, self._occupied(), self.rng)
+        self.active_powerups = {}
+        self.score_multiplier = 1
+        self.powerup_manager = PowerUpManager(self)
+
+    def _apply_shrink(self):
+        """Reduce the snake by two segments when a shrink power-up triggers."""
+        if len(self.snake.body) <= 3:
+            return
+        for _ in range(min(2, len(self.snake.body) - 3)):
+            tail = self.snake.body.pop()
+            self.snake._counts[tail] -= 1
+            if self.snake._counts[tail] <= 0:
+                del self.snake._counts[tail]
+
+    def apply_power_up(self, powerup_name):
+        """Activate and track a power-up effect for the current game state."""
+        self.powerup_manager.apply(powerup_name)
+        self.active_powerups = self.powerup_manager.active
+
+    def _current_food_points(self):
+        """Return the food value after active multiplier effects are applied."""
+        points = self.POINTS_PER_FOOD
+        if "score_multiplier" in self.active_powerups:
+            points *= self.score_multiplier
+        return points
 
     def _occupied(self):
         return self.snake.cells() | self.obstacles
@@ -102,19 +128,26 @@ class GameState:
         """Advance the game by one step. Call at the configured game speed."""
         if self.status != Status.RUNNING:
             return
+
+        self.powerup_manager.update(self.tick_interval_ms)
+
         self.snake.move()
 
         hit = collision.check(
             self.snake, self.width, self.height, self.obstacles
         )
         if hit is not None:
+            if "shield" in self.active_powerups:
+                self.powerup_manager.expire("shield")
+                self.active_powerups = self.powerup_manager.active
+                return
             self.collision = hit
             self.status = Status.GAME_OVER
             return
 
         if self.snake.head == self.food:
             self.snake.grow()
-            self.score += self.POINTS_PER_FOOD
+            self.score += self._current_food_points()
             self.foods_eaten += 1
             # Survival Mode speeds up and adds obstacles here
             self.rules.on_food_eaten(self)

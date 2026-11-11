@@ -39,7 +39,7 @@ class GameModeManager:
             id="power_up",
             name="Power-Up",
             selection_key="3",
-            implemented=False,
+            implemented=True,
             description="Collect temporary power-ups.",
         ),
         GameMode(
