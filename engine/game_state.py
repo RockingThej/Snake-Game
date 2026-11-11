@@ -9,7 +9,11 @@ Public interface other modules code against:
     state.set_direction(Direction.UP)
     state.tick()
     state.snake, state.food, state.obstacles, state.score, state.status,
-    state.collision (why the game ended), state.mode, state.difficulty
+    state.collision (why the game ended), state.mode, state.difficulty,
+    state.level, state.foods_eaten, state.tick_interval_ms
+
+Mode-specific behaviour (obstacles, rising difficulty) lives in
+modes/rules.py and is reached through ``state.rules``.
 """
 import random
 from enum import Enum
@@ -18,6 +22,7 @@ from engine import collision
 from engine.food import spawn_food
 from engine.snake import Direction, Snake
 from modes.difficulty import DifficultyManager
+from modes.rules import get_rules
 
 
 class Status(Enum):
@@ -37,16 +42,22 @@ class GameState:
         self.mode = mode
         self.difficulty_manager = difficulty_manager or DifficultyManager()
         self.difficulty = self.difficulty_manager.normalize(difficulty)
-        self.tick_interval_ms = self.difficulty_manager.get_speed_ms(
+        # Speed set by the difficulty; Survival Mode speeds up from here.
+        self.base_tick_interval_ms = self.difficulty_manager.get_speed_ms(
             self.difficulty
         )
+        self.tick_interval_ms = self.base_tick_interval_ms
         self.rng = rng or random.Random()
         self.snake = Snake(start=(width // 2, height // 2),
                            direction=Direction.RIGHT, length=3)
-        self.obstacles = set()   # filled by Obstacle Mode later
+        self.obstacles = set()   # filled by the mode rules when needed
         self.score = 0
+        self.foods_eaten = 0
+        self.level = 1
         self.status = Status.READY
         self.collision = None
+        self.rules = get_rules(mode)
+        self.rules.setup(self)           # may place obstacles
         self.food = spawn_food(width, height, self._occupied(), self.rng)
 
     def _occupied(self):
@@ -78,9 +89,10 @@ class GameState:
             )
         normalized = self.difficulty_manager.normalize(difficulty)
         self.difficulty = normalized
-        self.tick_interval_ms = self.difficulty_manager.get_speed_ms(
+        self.base_tick_interval_ms = self.difficulty_manager.get_speed_ms(
             normalized
         )
+        self.tick_interval_ms = self.base_tick_interval_ms
 
     def set_direction(self, direction):
         if self.status == Status.RUNNING:
@@ -103,6 +115,9 @@ class GameState:
         if self.snake.head == self.food:
             self.snake.grow()
             self.score += self.POINTS_PER_FOOD
+            self.foods_eaten += 1
+            # Survival Mode speeds up and adds obstacles here
+            self.rules.on_food_eaten(self)
             self.food = spawn_food(self.width, self.height,
                                    self._occupied(), self.rng)
             if self.food is None:        # board completely full: player wins

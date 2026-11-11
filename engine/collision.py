@@ -15,8 +15,7 @@ def hits_wall(head, width, height):
 
 def hits_self(snake):
     """True if the head overlaps any other body segment."""
-    body = list(snake.body)
-    return body[0] in body[1:]
+    return snake.head_overlaps_body()
 
 
 def hits_obstacle(head, obstacles):

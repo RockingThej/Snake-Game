@@ -133,8 +133,11 @@ class GameScreen:
 
     def hud_text(self):
         s = self.state
-        return "Score: %d   Mode: %s   Difficulty: %s" % (
+        text = "Score: %d   Mode: %s   Difficulty: %s" % (
             s.score, s.mode.replace("_", " ").title(), s.difficulty.title())
+        if s.mode == "survival":
+            text += "   Level: %d" % s.level
+        return text
 
     def message(self):
         s = self.state
