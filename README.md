@@ -93,12 +93,14 @@ main menu, mode and difficulty screens, the game, a results screen that saves
 your score, and the leaderboard. `run.py` is separate: it starts the Flask
 backend only.
 
-## Team 6
+## Team Members
 
-- Thejaswi S
-- Vishnu Maddirala
-- V S Shashidharan
-- Vishwas Hosamath
+| Team Member | SRN | Primary Responsibility |
+|---|---|---|
+| Thejaswi S | PES2UG24CS562 | Team Lead, Game Engine and Core Model |
+| Vishnu Maddirala | PES2UG24CS593 | Multiplayer and Communication Architecture |
+| V S Shashidharan | PES2UG24CS568 | UI, 2D Visualization and Game Modes |
+| Vishwas Hosamath | PES2UG24CS596 | Metrics, Reporting, QA and Testing |
 
 ## Documentation & Viva Deliverables
 
