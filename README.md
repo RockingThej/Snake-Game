@@ -100,14 +100,21 @@ backend only.
 - V S Shashidharan
 - Vishwas Hosamath
 
-## Documentation
+## Documentation & Viva Deliverables
 
-- [Software Requirements Specification (SRS v2.0)](docs/SRS.md)
-- [Software Architecture and Design Specification (SAD v2.0)](docs/SAD.md)
-- [Software Test Plan (STP v2.0)](docs/STP.md)
+- [Software Requirements Specification (SRS v2.0 - IEEE Format)](docs/SRS.md)
+- [Software Architecture and Design Specification (SAD v2.0 - IEEE Format)](docs/SAD.md)
+- [Software Test Plan (STP v2.0 - IEEE Format)](docs/STP.md)
+- [GitHub Product & Sprint Backlog (with Story Points)](docs/BACKLOG.md)
+- [Unit Testing Report (328/328 Passed)](docs/unit_test_report.md)
+- [System Validation Testing Report (292/292 Passed)](docs/system_validation_report.md)
+- [Code Coverage Report (83% Codebase Coverage)](docs/code_coverage_report.md)
+- [Branch Coverage Report (86% Branch Coverage)](docs/branch_coverage_report.md)
+- [Sprint 1 Outcome Video (1 min)](docs/Demo_Sprint_1.mp4)
+- [Sprint 2 Outcome Video (2 min)](docs/Demo_Sprint_2.mp4)
+- [Requirements Traceability Matrix (RTM - 31/31 Verified)](docs/RTM.md)
 - [Project Deviations & Architectural Decisions Report](docs/deviations.md)
-- [Requirements Traceability Matrix (RTM)](docs/RTM.md)
-- [Sprint 2 Modules Guide](docs/SPRINT2-modules.md)
 - [Performance & Benchmarks Report](docs/performance.md)
+- [Sprint 2 Modules Guide](docs/SPRINT2-modules.md)
 - [ADR-001: Technology Stack](docs/ADR-001-tech-stack.md)
 - Original Drafts (Sprint 0 Baseline): [SRS PDF](SnakeGame_Team6_SRS.pdf), [SAD PDF](SnakeGame_Team6_SAD.pdf), [STP PDF](SnakeGame_Team6_STP.pdf)
