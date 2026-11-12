@@ -97,10 +97,10 @@ backend only.
 
 | Team Member | SRN | Primary Responsibility |
 |---|---|---|
-| Thejaswi S | PES2UG24CS562 | Team Lead, Game Engine and Core Model |
-| Vishnu Maddirala | PES2UG24CS593 | Multiplayer and Communication Architecture |
-| V S Shashidharan | PES2UG24CS568 | UI, 2D Visualization and Game Modes |
-| Vishwas Hosamath | PES2UG24CS596 | Metrics, Reporting, QA and Testing |
+| Thejaswi S | PES2UG24CS562 | Game Engine Core, Collision Detection, Obstacle & Survival Modes, Performance Benchmarks |
+| Vishnu Maddirala | PES2UG24CS593 | Two-Player Battle Mode, Dual Input Dispatch, Multiplayer Collisions & Battle Scoring |
+| V S Shashidharan | PES2UG24CS568 | UI Framework, Screen Flow & HUD, Power-Up Mode & Visuals, Profile, Settings & Admin Screens |
+| Vishwas Hosamath | PES2UG24CS596 | Authentication & Bcrypt Hashing, Session Management, Admin Subsystem, Score Integrity & Security Suite |
 
 ## Documentation & Viva Deliverables
 
