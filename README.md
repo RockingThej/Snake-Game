@@ -1,5 +1,14 @@
 # A Snake Game
 
+Software Engineering mini-project, Section J, Team 6, PES University. Version 2.0 (v1.0 froze development at the end of Sprint 1 on 30 Oct 2026; Sprint 2 completed all 5 game modes, admin subsystem, security hardening, and final verification on 11 Nov 2026).
+
+| SRN | Name | Role | GitHub |
+|---|---|---|---|
+| PES2UG24CS562 | Thejaswi S | Dev Lead / Engine Lead, repo owner | [@RockingThej](https://github.com/RockingThej) |
+| PES2UG24CS593 | Vishnu Maddirala | Developer / Multiplayer & Database | [@vishnu-1107-cloud](https://github.com/vishnu-1107-cloud) |
+| PES2UG24CS568 | V S Shashidharan | Developer / UI & Game Modes | [@shashidharanvs](https://github.com/shashidharanvs) |
+| PES2UG24CS596 | Vishwas Hosamath | QA Lead / Security & Testing | [@Vishwas-H-sys](https://github.com/Vishwas-H-sys) |
+
 A modular Snake Game developed as a Software Engineering project, designed to provide multiple gameplay experiences while maintaining separate and maintainable game components.
 
 The game allows players to create accounts, select different game modes and difficulty levels, play, earn scores, and compete on leaderboards.
@@ -92,15 +101,6 @@ python main.py
 main menu, mode and difficulty screens, the game, a results screen that saves
 your score, and the leaderboard. `run.py` is separate: it starts the Flask
 backend only.
-
-## Team Members
-
-| Team Member | SRN | Primary Responsibility |
-|---|---|---|
-| Thejaswi S | PES2UG24CS562 | Game Engine Core, Collision Detection, Obstacle & Survival Modes, Performance Benchmarks |
-| Vishnu Maddirala | PES2UG24CS593 | Two-Player Battle Mode, Dual Input Dispatch, Multiplayer Collisions & Battle Scoring |
-| V S Shashidharan | PES2UG24CS568 | UI Framework, Screen Flow & HUD, Power-Up Mode & Visuals, Profile, Settings & Admin Screens |
-| Vishwas Hosamath | PES2UG24CS596 | Authentication & Bcrypt Hashing, Session Management, Admin Subsystem, Score Integrity & Security Suite |
 
 ## Documentation & Viva Deliverables
 
