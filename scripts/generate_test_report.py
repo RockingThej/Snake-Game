@@ -21,6 +21,11 @@ import time
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 
 def run_tests(repo_root: Path, temp_dir: Path):
     xml_path = temp_dir / "junit.xml"
