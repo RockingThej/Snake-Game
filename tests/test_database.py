@@ -20,9 +20,7 @@ from db import (
 
 class TestDatabaseSchema(unittest.TestCase):
     def setUp(self):
-        self.temp_dir = tempfile.TemporaryDirectory(
-            dir=Path(__file__).resolve().parent, prefix=".tmp-db-"
-        )
+        self.temp_dir = tempfile.TemporaryDirectory(prefix="tmp-db-")
         self.addCleanup(self.temp_dir.cleanup)
         self.db_path = Path(self.temp_dir.name) / "snake.sqlite3"
 
@@ -39,9 +37,7 @@ class TestDatabaseSchema(unittest.TestCase):
 
 class TestRepositories(unittest.TestCase):
     def setUp(self):
-        self.temp_dir = tempfile.TemporaryDirectory(
-            dir=Path(__file__).resolve().parent, prefix=".tmp-db-"
-        )
+        self.temp_dir = tempfile.TemporaryDirectory(prefix="tmp-db-")
         self.addCleanup(self.temp_dir.cleanup)
         self.db_path = Path(self.temp_dir.name) / "snake.sqlite3"
         self.alice = create_user("Alice", "hash-alice", self.db_path)

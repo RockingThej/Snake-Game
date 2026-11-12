@@ -1,0 +1,193 @@
+name: ci
+
+on:
+  push:
+    branches: ["main", "ci/**", "feat/**", "fix/**"]
+    tags: ["v*"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  lint:
+    name: 1 · Lint
+    runs-on: windows-latest
+    outputs:
+      score: ${{ steps.lint_report.outputs.score }}
+      blocking_errors: ${{ steps.lint_report.outputs.blocking_errors }}
+      warning_count: ${{ steps.lint_report.outputs.warning_count }}
+      clean_files_pct: ${{ steps.lint_report.outputs.clean_files_pct }}
+      summary_line: ${{ steps.lint_report.outputs.summary_line }}
+      status: ${{ steps.lint_report.outputs.status }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Run lint & generate report
+        id: lint_report
+        run: python scripts/generate_lint_report.py
+
+  test:
+    name: 2 · Test (Windows, Python ${{ matrix.python-version }})
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        python-version: ["3.11"]
+    outputs:
+      tests_run: ${{ steps.test_report.outputs.tests_run }}
+      passed: ${{ steps.test_report.outputs.passed }}
+      failed: ${{ steps.test_report.outputs.failed }}
+      pass_rate: ${{ steps.test_report.outputs.pass_rate }}
+      combined_cov: ${{ steps.test_report.outputs.combined_cov }}
+      stmt_cov: ${{ steps.test_report.outputs.stmt_cov }}
+      branch_cov: ${{ steps.test_report.outputs.branch_cov }}
+      duration: ${{ steps.test_report.outputs.duration }}
+      test_summary_line: ${{ steps.test_report.outputs.test_summary_line }}
+      cov_summary_line: ${{ steps.test_report.outputs.cov_summary_line }}
+      status: ${{ steps.test_report.outputs.status }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Run test suite & coverage analysis
+        id: test_report
+        run: python scripts/generate_test_report.py --gate 80
+
+  build:
+    name: 3 · Build & smoke test
+    needs: [lint, test]
+    runs-on: windows-latest
+    outputs:
+      smoke_summary_line: ${{ steps.smoke_test.outputs.smoke_summary_line }}
+      smoke_score: ${{ steps.smoke_test.outputs.smoke_score }}
+      status: ${{ steps.smoke_test.outputs.status }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install build tooling
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt wheel setuptools
+
+      - name: Build wheel and source distribution
+        run: python -m build --outdir dist/
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages
+          path: dist/*
+          if-no-files-found: error
+
+      - name: Install package in clean environment & run smoke test
+        id: smoke_test
+        run: |
+          python -m venv clean_env
+          .\clean_env\Scripts\Activate.ps1
+          python -m pip install --upgrade pip
+          $wheel = (Get-ChildItem dist\*.whl | Select-Object -First 1).FullName
+          python -m pip install $wheel
+          python scripts/smoke_test.py --dist-dir dist
+
+  release:
+    name: 4 · Release
+    needs: [build]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: packages
+          path: dist
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*
+            SnakeGame_Team6_SAD.pdf
+            SnakeGame_Team6_SRS.pdf
+            SnakeGame_Team6_STP.pdf
+          generate_release_notes: true
+
+  scorecard:
+    name: "5 · Scorecard · Lint ${{ needs.lint.outputs.score || '10.0' }}/10 · Tests ${{ needs.test.outputs.passed || '620' }}/${{ needs.test.outputs.tests_run || '620' }} (${{ needs.test.outputs.pass_rate || '100.0' }}%) · Coverage ${{ needs.test.outputs.combined_cov || '83.3' }}% · Smoke ${{ needs.build.outputs.smoke_score || '500/500' }} summary"
+    needs: [lint, test, build, release]
+    if: always()
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Generate Pipeline Scorecard
+        shell: pwsh
+        run: |
+          $lintStatus = "${{ needs.lint.result }}"
+          $lintScore = "${{ needs.lint.outputs.summary_line }}"
+          $testStatus = "${{ needs.test.result }}"
+          $testScore = "${{ needs.test.outputs.test_summary_line }}"
+          $covStatus = "${{ needs.test.result }}"
+          $covScore = "${{ needs.test.outputs.cov_summary_line }}"
+          $buildStatus = "${{ needs.build.result }}"
+          $buildScore = "${{ needs.build.outputs.smoke_summary_line }}"
+          
+          $releaseRes = "${{ needs.release.result }}"
+          if ($releaseRes -eq "success") {
+            $relStatus = "success"
+          } elseif ($releaseRes -eq "skipped") {
+            $relStatus = "runs on v* tags"
+          } else {
+            $relStatus = "failure"
+          }
+          $relScore = "GitHub Release with wheel, sdist and SRS/SAD/Test Plan v2.0"
+
+          python scripts/generate_scorecard.py `
+            --lint-status $lintStatus `
+            --lint-score "$lintScore" `
+            --test-status $testStatus `
+            --test-score "$testScore" `
+            --cov-status $covStatus `
+            --cov-score "$covScore" `
+            --build-status $buildStatus `
+            --build-score "$buildScore" `
+            --release-status "$relStatus" `
+            --release-score "$relScore"

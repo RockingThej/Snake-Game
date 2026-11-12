@@ -10,9 +10,7 @@ from scoring import ScoreManager
 
 class TestScoreManager(unittest.TestCase):
     def setUp(self):
-        self.temp_dir = tempfile.TemporaryDirectory(
-            dir=Path(__file__).resolve().parent, prefix=".tmp-score-"
-        )
+        self.temp_dir = tempfile.TemporaryDirectory(prefix="tmp-score-")
         self.addCleanup(self.temp_dir.cleanup)
         self.db_path = Path(self.temp_dir.name) / "snake.sqlite3"
         self.player1 = create_user("PlayerOne", "hash-one", self.db_path)
